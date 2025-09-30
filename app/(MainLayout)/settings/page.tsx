@@ -4,6 +4,7 @@ import InstallButton from "@/components/InstallButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import React from "react";
 import { motion } from "framer-motion";
+import { PushNotificationManager } from "@/components/PushNotificationManager";
 
 const SettingsPage = () => {
   return (
@@ -25,6 +26,8 @@ const SettingsPage = () => {
             native experience.
           </p>
           <InstallButton />
+
+          <PushNotificationManager />
         </CardContent>
       </Card>
     </motion.div>
