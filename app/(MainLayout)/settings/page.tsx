@@ -26,7 +26,15 @@ const SettingsPage = () => {
             native experience.
           </p>
           <InstallButton />
+        </CardContent>
+      </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Push Notifications</CardTitle>
+        </CardHeader>
+
+        <CardContent className="space-y-2">
           <PushNotificationManager />
         </CardContent>
       </Card>
