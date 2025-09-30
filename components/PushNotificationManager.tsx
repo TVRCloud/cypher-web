@@ -79,9 +79,7 @@ export function PushNotificationManager() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 border rounded-lg shadow-sm bg-card">
-      <h3 className="text-lg font-semibold">Push Notifications</h3>
-
+    <div className="flex flex-col gap-4">
       {subscription ? (
         <>
           <p className="text-sm">You are subscribed to push notifications.</p>
