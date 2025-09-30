@@ -192,7 +192,8 @@ export default function FilesPage() {
                             </TableCell>
                           </TableRow>
                         ))
-                      : filteredFiles.map((file) => (
+                      : filteredFiles &&
+                        filteredFiles.map((file) => (
                           <TableRow key={file._id}>
                             <TableCell className="font-medium max-w-xs">
                               <div className="flex items-center space-x-2">
