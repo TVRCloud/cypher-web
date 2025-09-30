@@ -38,7 +38,7 @@ export async function registerAction(
 
   const { date, time } = getCurrentDateTime();
 
-  const hashedPassword = hashPassword(password);
+  const hashedPassword = await hashPassword(password);
   const user = await Admin.create({
     userId: crypto.randomUUID(),
     email,
@@ -71,7 +71,12 @@ export async function loginAction(
     return { message: "User not found" };
   }
 
-  const isValid = verifyPassword(password, user.password);
+  console.log(password, user.password.trim());
+
+  const isValid = await verifyPassword(password, user.password.trim());
+
+  console.log(isValid);
+
   if (!isValid) {
     return { message: "Invalid password" };
   }
