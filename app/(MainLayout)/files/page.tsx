@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Card,
@@ -21,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -42,13 +42,28 @@ import { useFileStats } from "@/hooks/files/useFileStats";
 import { formatFileSize } from "@/utils/formatFileSize";
 import { StatsCard } from "@/components/stats-card";
 import { motion } from "framer-motion";
+import { FaFilterCircleXmark } from "react-icons/fa6";
+import { Button } from "@/components/ui/button";
+
+const qualityColors: Record<string, string> = {
+  "2160p": "bg-[#FF0000] text-white",
+  "1080p": "bg-[#1E90FF] text-white",
+  "720p": "bg-[#32CD32] text-white",
+  "480p": "bg-[#FFD700] text-black",
+  "N/A": "bg-transparent text-white",
+};
 
 export default function FilesPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedQuality, setSelectedQuality] = useState<string[]>([]);
+  const [selectedLanguage, setSelectedLanguage] = useState<string[]>([]);
   const { ref, inView } = useInView();
 
   const { data, fetchNextPage, hasNextPage, isLoading, isFetchingNextPage } =
-    useInfiniteFiles(searchTerm);
+    useInfiniteFiles(searchTerm, {
+      quality: selectedQuality,
+      language: selectedLanguage,
+    });
 
   const { data: stats, isLoading: statsLoading } = useFileStats();
 
@@ -59,6 +74,37 @@ export default function FilesPage() {
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const filteredFiles = data?.pages.flat() || [];
+
+  const defaultQualities = ["2160p", "1080p", "720p", "480p"];
+  const defaultLanguages = ["multi", "english", "hindi", "tamil", "malayalam"];
+
+  const qualities = Array.from(
+    new Set([
+      ...defaultQualities,
+      ...filteredFiles.map((f) => f.quality ?? "N/A"),
+    ])
+  );
+
+  const languages = Array.from(
+    new Set([
+      ...defaultLanguages,
+      ...filteredFiles.flatMap((f) =>
+        f.language ? f.language.split(",").map((l) => l.trim()) : ["N/A"]
+      ),
+    ])
+  );
+
+  const handleQualityChange = (value: string) => {
+    setSelectedQuality((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    );
+  };
+
+  const handleLanguageChange = (value: string) => {
+    setSelectedLanguage((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    );
+  };
 
   return (
     <motion.div
@@ -149,10 +195,70 @@ export default function FilesPage() {
                     className="pl-10"
                   />
                 </div>
-                <Button variant="outline" size="sm">
-                  <Filter className="mr-2 h-4 w-4" />
-                  Filter
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant={`${
+                        selectedLanguage.length > 0 ||
+                        selectedQuality.length > 0
+                          ? "default"
+                          : "outline"
+                      }`}
+                      size="sm"
+                      className="relative"
+                    >
+                      {selectedQuality.length + selectedLanguage.length > 0 && (
+                        <Badge className="mr-2 h-4 w-4 absolute -top-[10px] -right-2 bg-destructive">
+                          {selectedQuality.length + selectedLanguage.length}
+                        </Badge>
+                      )}
+                      <Filter className="mr-2 h-4 w-4" />
+                      Filter
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56 p-2">
+                    <DropdownMenuLabel>Quality</DropdownMenuLabel>
+                    {qualities
+                      .filter((q) => q !== "N/A")
+                      .map((q) => (
+                        <DropdownMenuCheckboxItem
+                          key={q}
+                          checked={selectedQuality.includes(q)}
+                          onCheckedChange={() => handleQualityChange(q)}
+                        >
+                          {q}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    <DropdownMenuSeparator className="my-2" />
+                    <DropdownMenuLabel>Language</DropdownMenuLabel>
+                    {languages
+                      .filter((l) => l !== "N/A" && l !== "dual audio")
+                      .map((l) => (
+                        <DropdownMenuCheckboxItem
+                          key={l}
+                          checked={selectedLanguage.includes(l)}
+                          onCheckedChange={() => handleLanguageChange(l)}
+                          className="capitalize"
+                        >
+                          {l}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {selectedQuality.length + selectedLanguage.length > 0 && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="ml-2"
+                    onClick={() => {
+                      setSelectedQuality([]);
+                      setSelectedLanguage([]);
+                    }}
+                  >
+                    <FaFilterCircleXmark />
+                  </Button>
+                )}
               </div>
 
               {/* Desktop Table */}
@@ -162,9 +268,9 @@ export default function FilesPage() {
                     <TableRow>
                       <TableHead>File Name</TableHead>
                       <TableHead>File ID</TableHead>
-                      <TableHead>Type</TableHead>
+                      <TableHead>Quality</TableHead>
                       <TableHead>Size</TableHead>
-                      <TableHead>Link</TableHead>
+                      <TableHead>Language</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -210,25 +316,17 @@ export default function FilesPage() {
                               {file._id}
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline">
-                                {file.file_type
-                                  ? file.file_type.split("/")[1].toUpperCase()
-                                  : "N/A"}
+                              <Badge
+                                className={qualityColors[file.quality ?? "N/A"]}
+                              >
+                                {file.quality ?? "N/A"}
                               </Badge>
                             </TableCell>
                             <TableCell>
                               {formatFileSize(file.file_size)}
                             </TableCell>
-                            <TableCell>
-                              <Button variant="ghost" size="sm" asChild>
-                                <a
-                                  href={`https://t.me/cypher_v2_bot?start=sendfile-_-${file._id}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <ExternalLink className="h-3 w-3" />
-                                </a>
-                              </Button>
+                            <TableCell className="capitalize">
+                              {file.language ?? "N/A"}
                             </TableCell>
                             <TableCell className="text-right">
                               <DropdownMenu>
@@ -243,11 +341,18 @@ export default function FilesPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuItem>
-                                    View details
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      window.open(
+                                        `https://t.me/cypher_v2_bot?start=sendfile-_-${file._id}`,
+                                        "_blank",
+                                        "noopener,noreferrer"
+                                      );
+                                    }}
+                                  >
+                                    View file
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem>Edit file</DropdownMenuItem>
-                                  <DropdownMenuItem>Copy link</DropdownMenuItem>
+
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem className="text-red-600">
                                     Delete file
