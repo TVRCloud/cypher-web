@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import Providers from "@/lib/ReactQueryClientProvider";
 import { Toaster } from "@/components/ui/sonner";
+import NotificationListener from "@/components/NotificationListener";
 
 export const metadata: Metadata = {
   title: "CYPHER Bot Admin",
@@ -30,6 +31,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <NotificationListener />
           <Providers>{children}</Providers>
           <Toaster />
         </ThemeProvider>
