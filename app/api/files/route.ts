@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import File from "@/models/Files";
@@ -23,10 +24,25 @@ export async function GET(request: Request) {
     const skip = parseInt(searchParams.get("skip") || "0");
     const limit = parseInt(searchParams.get("limit") || "10");
     const search = searchParams.get("search") || "";
+    const quality =
+      searchParams.get("quality")?.split(",").filter(Boolean) || [];
+    const language =
+      searchParams.get("language")?.split(",").filter(Boolean) || [];
 
-    const query = search
-      ? { file_name: { $regex: search, $options: "i" } }
-      : {};
+    const query: any = {};
+    if (search) {
+      query.file_name = { $regex: search, $options: "i" };
+    }
+    if (quality.length > 0) {
+      query.quality = { $in: quality };
+    }
+    if (language.length > 0) {
+      if (language.includes("multi")) {
+        query.language = { $regex: /,/ };
+      } else {
+        query.language = { $in: language };
+      }
+    }
 
     const files = await File.find(query)
       .sort({ created_at: -1 })
