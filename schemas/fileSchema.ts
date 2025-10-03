@@ -5,6 +5,9 @@ export const FileItemSchema = z.object({
   file_name: z.string(),
   file_type: z.string(),
   file_size: z.number(),
+  language: z.string().nullable(),
+  quality: z.string().nullable(),
+  year: z.string().nullable(),
 });
 
 export const FileListSchema = z.array(FileItemSchema);
