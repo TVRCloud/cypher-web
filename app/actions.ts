@@ -4,6 +4,7 @@
 import webpush, { PushSubscription as WebPushSubscription } from "web-push";
 import Subscription from "@/models/Subscription";
 import connectDB from "@/lib/mongodb";
+import Notification from "@/models/Notification";
 
 // Set VAPID keys for push notifications
 webpush.setVapidDetails(
@@ -34,37 +35,41 @@ export async function unsubscribeUser(endpoint: string) {
 }
 
 export async function sendNotification(message: string) {
-  await connectDB();
+  try {
+    await connectDB();
 
-  // Fetch all subscriptions
-  const subscriptions = await Subscription.find();
+    // Save to DB
+    await Notification.create({ message });
 
-  if (!subscriptions.length) {
-    throw new Error("No subscription available");
+    // Fetch subscriptions
+    const subscriptions = await Subscription.find();
+    if (!subscriptions.length) throw new Error("No subscription available");
+
+    const payload = JSON.stringify({
+      title: "Test Notification",
+      body: message,
+      icon: "https://cypher-web-mu.vercel.app/icon-192x192.png",
+      url: "/",
+    });
+
+    await Promise.all(
+      subscriptions.map((sub) =>
+        webpush
+          .sendNotification(sub as any, payload)
+          .catch(async (err: any) => {
+            console.error("Push error:", err);
+            if (err.statusCode === 410 || err.statusCode === 404) {
+              await Subscription.findOneAndDelete({ endpoint: sub.endpoint });
+            }
+          })
+      )
+    );
+
+    return { success: true };
+  } catch (err: any) {
+    console.error("Send notification error:", err);
+    return { success: false, error: err.message || "Unknown error" };
   }
-
-  const payload = JSON.stringify({
-    title: "Test Notification",
-    body: message,
-    icon: "https://cypher-web-mu.vercel.app/icon-192x192.png",
-    url: "https://cypher-web-mu.vercel.app/",
-  });
-
-  await Promise.all(
-    subscriptions.map((sub) =>
-      webpush
-        .sendNotification(sub as unknown as WebPushSubscription, payload)
-        .catch(async (err: any) => {
-          console.error("Push error:", err);
-          // Remove invalid subscriptions
-          if (err.statusCode === 410 || err.statusCode === 404) {
-            await Subscription.findOneAndDelete({ endpoint: sub.endpoint });
-          }
-        })
-    )
-  );
-
-  return { success: true };
 }
 
 // Optional: send notification to a specific admin
