@@ -1,12 +1,9 @@
-import { signAccessToken, signRefreshToken } from "@/lib/jwt";
-import { RefreshToken } from "@/models/refresh-token";
-import { setRefreshCookie } from "@/lib/cookies";
-import { NextRequest, NextResponse } from "next/server";
-import { getClientIp, hashPassword } from "@/lib/auth-helpers";
+import { NextResponse, type NextRequest } from "next/server";
 import { User } from "@/models/user";
-import { connectToDB } from "@/lib/db";
-import { registerSchema } from "@/validation/auth";
+import { hashPassword, getClientIp } from "@/lib/auth-helpers";
 import { rateLimit } from "@/lib/rate-limit";
+import { registerSchema } from "@/validation/auth";
+import { connectToDB } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
@@ -38,27 +35,9 @@ export async function POST(req: NextRequest) {
   const passwordHash = await hashPassword(password);
   const user = await User.create({ email, password: passwordHash });
 
-  // 🔹 Auto-login (issue access + refresh token)
-  const jti = crypto.randomUUID();
-  const refreshExpSec = 7 * 24 * 60 * 60;
-  const access = await signAccessToken(user._id.toString());
-  const refresh = await signRefreshToken(
-    user._id.toString(),
-    jti,
-    refreshExpSec
-  );
-
-  await RefreshToken.create({
-    jti,
-    user: user._id,
-    expiresAt: new Date(Date.now() + refreshExpSec * 1000),
-  });
-
-  const res = NextResponse.json(
+  return NextResponse.json(
     {
-      message: "Registered and logged in",
-      accessToken: access.token,
-      expiresIn: access.expiresIn,
+      message: "Registered",
       user: {
         id: user._id.toString(),
         email: user.email,
@@ -67,7 +46,4 @@ export async function POST(req: NextRequest) {
     },
     { status: 201 }
   );
-
-  setRefreshCookie(res, refresh.token, refresh.expiresIn);
-  return res;
 }
