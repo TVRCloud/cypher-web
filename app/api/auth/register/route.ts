@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { email, password } = parsed.data;
+  const { email, password, username } = parsed.data;
 
   await connectToDB();
   const existing = await User.findOne({ email }).lean();
@@ -33,7 +33,14 @@ export async function POST(req: NextRequest) {
   }
 
   const passwordHash = await hashPassword(password);
-  const user = await User.create({ email, password: passwordHash });
+  const user = await User.create({
+    username,
+    email,
+    password: passwordHash,
+    role: "user",
+  });
+
+  console.log(user);
 
   return NextResponse.json(
     {
@@ -41,6 +48,7 @@ export async function POST(req: NextRequest) {
       user: {
         id: user._id.toString(),
         email: user.email,
+        role: user.role,
         createdAt: user.createdAt,
       },
     },
