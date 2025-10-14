@@ -30,6 +30,8 @@ export function AccessTokenProvider({
 }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
+  console.log("access token", accessToken);
+
   const refresh = useCallback(async () => {
     const res = await fetch("/api/auth/refresh", { method: "POST" });
     if (!res.ok) {
