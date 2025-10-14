@@ -10,6 +10,13 @@ const UserSchema = new Schema(
   {
     email: { type: String, required: true, unique: true, index: true },
     password: { type: String, required: true },
+    role: {
+      type: String,
+      required: true,
+      enum: ["user", "admin", "owner"],
+      default: "user",
+    },
+    username: { type: String, required: true, unique: true, index: true },
   },
   { timestamps: { createdAt: true, updatedAt: true } }
 );
