@@ -10,6 +10,8 @@ const envSchema = z.object({
   ACCESS_TOKEN_EXPIRES: z.string().default("15m"),
   REFRESH_TOKEN_EXPIRES: z.string().default("7d"),
   PRIMARY_DB_URI: z.string().min(1),
+  BOT_DB_URI: z.string().min(1).optional(),
+  BOT_DB_NAME: z.string().min(1).optional(),
   BCRYPT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
 });
 

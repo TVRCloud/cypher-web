@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 import {
   isAuthRoute,
   isProtectedRoute,
@@ -6,21 +7,18 @@ import {
   isPublicRoute,
 } from "@/lib/route-list";
 
-export function proxy(req: NextRequest) {
-  const pathname = req.nextUrl.pathname;
+export async function proxy(req: NextRequest) {
+  const { pathname } = req.nextUrl;
   const isApiRoute = pathname.startsWith("/api");
   const isFileAsset = /\.[a-zA-Z0-9]+$/.test(pathname);
-  const authHeader = req.headers.get("authorization");
-  const headerToken = authHeader?.replace("Bearer ", "");
-  const cookieToken = req.cookies.get("access_token")?.value;
-  const token = headerToken ?? cookieToken;
 
-  if (isFileAsset) {
+  if (isFileAsset) return NextResponse.next();
+
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+
+  if (isAuthRoute(pathname)) {
+    if (token) return NextResponse.redirect(new URL("/", req.nextUrl));
     return NextResponse.next();
-  }
-
-  if (isAuthRoute(pathname) && token) {
-    return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
   }
 
   if (isPublicRoute(pathname) || isPublicApiRoute(pathname)) {
@@ -32,12 +30,10 @@ export function proxy(req: NextRequest) {
       if (isApiRoute) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
       }
-
       const signInUrl = new URL("/sign-in", req.nextUrl);
       signInUrl.searchParams.set("next", pathname);
       return NextResponse.redirect(signInUrl);
     }
-
     return NextResponse.next();
   }
 

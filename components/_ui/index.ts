@@ -6,3 +6,5 @@ export { DashCard, GlassCard, Card, CardContent, CardHeader, CardTitle, CardDesc
 export { GlassInput, Input } from "./input";
 export { StatusBadge, Badge, badgeVariants } from "./badge";
 export { FormField, GlassFormField } from "./form-field";
+export { Tabs, AnimatedTabsList, AnimatedTabsTrigger, TabsContent } from "./tabs";
+export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption } from "./table";

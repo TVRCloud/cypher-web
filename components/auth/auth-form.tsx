@@ -8,11 +8,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, AlertCircle } from "lucide-react";
+import { signIn } from "next-auth/react";
+import { getSession } from "next-auth/react";
 
 import { GlassCard, CardContent } from "@/components/_ui/card";
 import { GlassInput } from "@/components/_ui/input";
 import { GlassFormField } from "@/components/_ui/form-field";
 import { AppButton } from "@/components/_ui/button";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 const formSchema = z.object({
   email: z.email(),
@@ -23,6 +26,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
   const router = useRouter();
+  const setAuth = useAuthStore((state) => state.setAuth);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -38,17 +42,37 @@ export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
     setLoading(true);
     setError(null);
     try {
-      const endpoint = isSignIn ? "/api/auth/signin" : "/api/auth/signup";
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
-      if (!res.ok) {
-        const data = (await res.json()) as { message?: string };
-        throw new Error(data.message ?? "Authentication failed");
+      if (!isSignIn) {
+        // Create the account first, then sign in via NextAuth
+        const res = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(values),
+        });
+        if (!res.ok) {
+          const data = (await res.json()) as { message?: string };
+          throw new Error(data.message ?? "Sign up failed");
+        }
       }
-      router.push("/dashboard");
+
+      const result = await signIn("credentials", {
+        redirect: false,
+        email: values.email,
+        password: values.password,
+      });
+
+      if (result?.error) throw new Error("Invalid email or password");
+
+      // Sync permissions into Zustand store
+      const session = await getSession();
+      if (session?.user) {
+        setAuth({
+          user: { id: session.user.id, email: session.user.email ?? "", role: session.user.role },
+          permissions: session.user.permissions ?? [],
+        });
+      }
+
+      router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Authentication failed");
     } finally {

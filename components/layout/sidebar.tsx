@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { HelpCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { menuList } from "@/lib/menu-list";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { canAccessPath } from "@/lib/auth/route-access";
 
 function NavItem({
   href,
@@ -53,6 +55,8 @@ interface DashboardSidebarProps {
 
 export function DashboardSidebar({ open, onClose }: DashboardSidebarProps) {
   const pathname = usePathname();
+  const user = useAuthStore((state) => state.user);
+  const permissions = useAuthStore((state) => state.permissions);
 
   return (
     <aside
@@ -97,7 +101,13 @@ export function DashboardSidebar({ open, onClose }: DashboardSidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 px-4 py-5 space-y-4 overflow-y-auto">
-        {menuList.map((group) => (
+        {menuList.map((group) => {
+          const visibleMenus = group.menus.filter((menu) =>
+            canAccessPath(menu.href, user?.role, permissions),
+          );
+          if (visibleMenus.length === 0) return null;
+
+          return (
           <div key={group.groupLabel || "root"} className="space-y-1">
             {group.groupLabel ? (
               <p className="px-5 pb-2 text-[10px] font-bold tracking-widest uppercase text-slate-400 dark:text-[#8f9bba]/60">
@@ -105,7 +115,7 @@ export function DashboardSidebar({ open, onClose }: DashboardSidebarProps) {
               </p>
             ) : null}
 
-            {group.menus.map(({ href, label, icon }) => (
+            {visibleMenus.map(({ href, label, icon }) => (
               <NavItem
                 key={href}
                 href={href}
@@ -113,13 +123,13 @@ export function DashboardSidebar({ open, onClose }: DashboardSidebarProps) {
                 icon={icon}
                 active={
                   pathname === href ||
-                  (href !== "/dashboard" && pathname.startsWith(href))
+                  (href !== "/" && pathname.startsWith(href))
                 }
                 onClick={onClose}
               />
             ))}
           </div>
-        ))}
+        )})}
       </nav>
 
       {/* Help card — gradient stays constant in both modes */}

@@ -1,10 +1,12 @@
 "use client";
 
 import { Bell, LogOut, Menu, Search, Settings, UserCircle2 } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Input } from "@/components/ui/input";
 import { menuList } from "@/lib/menu-list";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 interface DashboardTopbarProps {
   onMenuClick: () => void;
@@ -13,26 +15,27 @@ interface DashboardTopbarProps {
 function resolvePageLabel(pathname: string) {
   for (const group of menuList) {
     for (const menu of group.menus) {
-      if (pathname === menu.href || (menu.href !== "/dashboard" && pathname.startsWith(menu.href))) {
+      if (pathname === menu.href || (menu.href !== "/" && pathname.startsWith(menu.href))) {
         return menu.label;
       }
     }
   }
-
   return "Dashboard";
 }
 
 export function DashboardTopbar({ onMenuClick }: DashboardTopbarProps) {
   const pathname = usePathname();
-  const router = useRouter();
+  const clearAuth = useAuthStore((state) => state.clearAuth);
   const page = resolvePageLabel(pathname);
 
   const onLogout = async () => {
     try {
+      // Revoke DB sessions server-side
       await fetch("/api/auth/logout", { method: "POST" });
     } finally {
-      router.push("/sign-in");
-      router.refresh();
+      clearAuth();
+      // NextAuth clears the session cookie and redirects
+      await signOut({ callbackUrl: "/sign-in" });
     }
   };
 

@@ -11,4 +11,5 @@ const nextConfig: NextConfig = {
   turbopack: {},
 };
 
-export default withPWA(nextConfig);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default withPWA(nextConfig as any);

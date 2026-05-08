@@ -6,13 +6,7 @@ export const protectedRoutePrefixes = ["/"];
 
 export const adminRoutePrefixes = ["/dashboard/admin", "/api/admin"];
 
-export const publicApiRoutes = [
-  "/api/auth/signin",
-  "/api/auth/signup",
-  "/api/auth/refresh",
-  "/api/auth/[...nextauth]",
-  "/api/ping",
-];
+export const publicApiRoutes = ["/api/ping"];
 
 export function isAuthRoute(pathname: string) {
   return authRoutes.includes(pathname);
@@ -23,15 +17,8 @@ export function isPublicRoute(pathname: string) {
 }
 
 export function isPublicApiRoute(pathname: string) {
-  if (pathname === "/api/auth/[...nextauth]") return true;
-  if (pathname.startsWith("/api/auth/")) {
-    return (
-      pathname === "/api/auth/signin" ||
-      pathname === "/api/auth/signup" ||
-      pathname === "/api/auth/refresh"
-    );
-  }
-
+  // All NextAuth internal routes (/api/auth/session, /api/auth/csrf, /api/auth/callback/*, etc.)
+  if (pathname.startsWith("/api/auth/")) return true;
   return publicApiRoutes.includes(pathname);
 }
 

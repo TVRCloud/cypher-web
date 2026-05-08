@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 
 export function ThemeToggle() {
   const { setTheme, resolvedTheme } = useTheme();
-
   const isDark = resolvedTheme === "dark";
 
   return (
@@ -16,7 +15,8 @@ export function ThemeToggle() {
       aria-label="Toggle theme"
       onClick={() => setTheme(isDark ? "light" : "dark")}
     >
-      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      <Sun className="h-4 w-4 hidden dark:block" />
+      <Moon className="h-4 w-4 dark:hidden" />
     </Button>
   );
 }

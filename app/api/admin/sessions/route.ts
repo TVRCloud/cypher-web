@@ -9,7 +9,10 @@ export async function GET() {
     await requirePermission("sessions.read");
     await connectPrimaryDb();
 
-    const sessions = await SessionModel.find({ revoked: false }).sort({ lastUsedAt: -1 }).lean();
+    const sessions = await SessionModel.find({ revoked: false })
+      .populate({ path: "userId", select: "email roleId", options: { lean: true } })
+      .sort({ lastUsedAt: -1 })
+      .lean();
     return ok(sessions);
   } catch (error) {
     if (error instanceof HttpError) return fail(error.message, error.statusCode);
