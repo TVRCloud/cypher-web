@@ -2,7 +2,7 @@
  * _ui/button — extends shadcn Button with a `gradient` prop.
  * Never modify components/ui/button.tsx; extend here instead.
  */
-import { Button, buttonVariants } from "@/components/_ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { type VariantProps } from "class-variance-authority";
 
