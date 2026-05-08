@@ -1,0 +1,16 @@
+{
+  "name": "Admin Platform",
+  "short_name": "AdminAuth",
+  "description": "Production auth and RBAC dashboard platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

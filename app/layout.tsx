@@ -1,40 +1,34 @@
-import type React from "react";
 import type { Metadata } from "next";
-import "./globals.css";
+import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
-import Providers from "@/lib/ReactQueryClientProvider";
-import { Toaster } from "@/components/ui/sonner";
-import NotificationListener from "@/components/NotificationListener";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryProvider } from "@/providers/query-provider";
+import "./globals.css";
+
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "CYPHER Bot Admin",
-  description: "Admin dashboard for Telegram movie bot",
-  manifest: "/manifest.ts",
-  appleWebApp: {
-    capable: true,
-    title: "CYPHER Bot Admin",
-  },
-  generator: "Kratos",
+  title: "Cypher — Telegram Bot Monitor",
+  description: "Real-time monitoring and analytics for your Telegram bot",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode;
-}) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <NotificationListener />
-          <Providers>{children}</Providers>
-          <Toaster />
-        </ThemeProvider>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col">
+        <QueryProvider>
+          <ThemeProvider>
+            <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );
