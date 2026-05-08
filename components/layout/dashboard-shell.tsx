@@ -9,6 +9,7 @@ import { RouteAccessGuard } from "@/components/auth/route-access-guard";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [bootstrapResolved, setBootstrapResolved] = useState(false);
   const hydrated = useAuthStore((state) => state.hydrated);
   const user = useAuthStore((state) => state.user);
   const permissions = useAuthStore((state) => state.permissions);
@@ -46,6 +47,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         }
       } catch {
         // non-blocking bootstrap fetch
+      } finally {
+        if (!cancelled) setBootstrapResolved(true);
       }
     })();
 
@@ -54,9 +57,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     };
   }, [hydrated, permissions.length, setAuth, user]);
 
+  const authChecked = hydrated && (Boolean(user && permissions.length > 0) || bootstrapResolved);
+
   return (
     <>
-      <RouteAccessGuard />
+      {authChecked ? <RouteAccessGuard /> : null}
       <PageGlow />
 
       {/* Mobile backdrop */}
