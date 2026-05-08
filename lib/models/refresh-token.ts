@@ -11,5 +11,7 @@ const refreshTokenSchema = new Schema(
   { timestamps: true, collection: "refresh_tokens" },
 );
 
+refreshTokenSchema.index({ tokenHash: 1 }, { unique: true });
+
 export type RefreshTokenDocument = InferSchemaType<typeof refreshTokenSchema> & { _id: string };
 export const RefreshTokenModel = models.RefreshToken || model("RefreshToken", refreshTokenSchema);

@@ -65,19 +65,23 @@ export async function refreshSession(rawRefreshToken: string, meta: ClientMeta) 
 
   const payload = verifyRefreshToken(rawRefreshToken);
   const tokenHash = hashToken(rawRefreshToken);
-
-  const existingToken = await RefreshTokenModel.findOne({ tokenHash, revoked: false });
-  if (!existingToken) throw new HttpError(401, "Refresh token revoked or missing");
-
-  if (existingToken.expiresAt.getTime() <= Date.now()) throw new HttpError(401, "Refresh token expired");
+  const now = new Date();
+  const existingToken = await RefreshTokenModel.findOneAndUpdate(
+    {
+      tokenHash,
+      revoked: false,
+      expiresAt: { $gt: now },
+    },
+    { $set: { revoked: true } },
+    { new: true },
+  );
+  if (!existingToken) throw new HttpError(401, "Refresh token revoked, expired, or missing");
 
   const user = await UserModel.findById(payload.userId);
   if (!user || user.tokenVersion !== payload.tokenVersion) throw new HttpError(401, "Session invalid");
 
   const role = await RoleModel.findById(user.roleId);
   if (!role) throw new HttpError(401, "Role not found");
-
-  existingToken.revoked = true;
 
   const accessPayload = buildAccessPayload({
     userId: user._id.toString(),
@@ -92,8 +96,7 @@ export async function refreshSession(rawRefreshToken: string, meta: ClientMeta) 
     tokenId: crypto.randomUUID(),
   });
 
-  existingToken.replacedByTokenHash = rotatedHash;
-  await existingToken.save();
+  await RefreshTokenModel.updateOne({ _id: existingToken._id }, { $set: { replacedByTokenHash: rotatedHash } });
 
   await RefreshTokenModel.create({
     userId: user._id,

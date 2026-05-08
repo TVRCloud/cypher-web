@@ -1,16 +1,18 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Loader2, AlertCircle } from "lucide-react";
+
+import { GlassCard, CardContent } from "@/components/_ui/card";
+import { GlassInput } from "@/components/_ui/input";
+import { GlassFormField } from "@/components/_ui/form-field";
+import { AppButton } from "@/components/_ui/button";
 
 const formSchema = z.object({
   email: z.email(),
@@ -24,6 +26,8 @@ export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const isSignIn = mode === "signin";
+
   const {
     register,
     handleSubmit,
@@ -33,23 +37,20 @@ export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
   const onSubmit = handleSubmit(async (values) => {
     setLoading(true);
     setError(null);
-
     try {
-      const endpoint = mode === "signin" ? "/api/auth/signin" : "/api/auth/signup";
-      const response = await fetch(endpoint, {
+      const endpoint = isSignIn ? "/api/auth/signin" : "/api/auth/signup";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
-
-      if (!response.ok) {
-        const data = (await response.json()) as { message?: string };
+      if (!res.ok) {
+        const data = (await res.json()) as { message?: string };
         throw new Error(data.message ?? "Authentication failed");
       }
-
       router.push("/dashboard");
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Authentication failed");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Authentication failed");
     } finally {
       setLoading(false);
     }
@@ -57,49 +58,133 @@ export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 28 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: "easeOut" }}
-      className="w-full max-w-md"
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="w-full max-w-105"
     >
-      <Card className="border-white/40 bg-white/80 backdrop-blur">
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <h1 className="text-2xl font-semibold tracking-tight">{mode === "signin" ? "Sign In" : "Create Account"}</h1>
-            <p className="text-sm text-muted-foreground">Secure access for your admin operations.</p>
+      <GlassCard>
+        <CardContent className="p-8 space-y-7">
+          {/* Mobile-only logo */}
+          <div className="flex items-center gap-2.5 lg:hidden">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold shrink-0"
+              style={{
+                background: "linear-gradient(97.89deg, #4776E6 0%, #8E54E9 100%)",
+              }}
+            >
+              ◈
+            </div>
+            <span className="text-white font-bold text-sm tracking-widest uppercase">
+              Cypher Admin
+            </span>
           </div>
 
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="name@company.com" {...register("email")} />
-              {errors.email && <p className="text-xs text-red-600">{errors.email.message}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" placeholder="••••••••" {...register("password")} />
-              {errors.password && <p className="text-xs text-red-600">{errors.password.message}</p>}
-            </div>
+          {/* Heading */}
+          <div className="space-y-1.5">
+            <h2 className="text-2xl font-bold text-white tracking-tight">
+              {isSignIn ? "Welcome back" : "Create account"}
+            </h2>
+            <p className="text-sm text-white/40">
+              {isSignIn
+                ? "Sign in to access your dashboard."
+                : "Get started with your admin workspace."}
+            </p>
+          </div>
 
-            {error && (
-              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-red-600">
-                {error}
-              </motion.p>
+          {/* Form */}
+          <form onSubmit={onSubmit} className="space-y-4">
+            <GlassFormField
+              id="email"
+              label="Email address"
+              error={errors.email?.message}
+            >
+              <GlassInput
+                id="email"
+                type="email"
+                placeholder="name@company.com"
+                autoComplete="email"
+                {...register("email")}
+              />
+            </GlassFormField>
+
+            <GlassFormField
+              id="password"
+              label="Password"
+              error={errors.password?.message}
+            >
+              <GlassInput
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                autoComplete={isSignIn ? "current-password" : "new-password"}
+                {...register("password")}
+              />
+            </GlassFormField>
+
+            {isSignIn && (
+              <div className="flex justify-end -mt-1">
+                <Link
+                  href="#"
+                  className="text-xs text-white/35 hover:text-white/60 transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              </div>
             )}
 
-            <Button disabled={loading} className="w-full" type="submit">
-              {loading ? "Processing..." : mode === "signin" ? "Sign In" : "Create Account"}
-            </Button>
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="flex items-center gap-2 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2.5"
+                >
+                  <AlertCircle size={14} className="text-red-400 shrink-0" />
+                  <p className="text-sm text-red-400">{error}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <AppButton
+              gradient
+              type="submit"
+              disabled={loading}
+              className="w-full h-11 text-sm"
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 size={15} className="animate-spin" />
+                  Processing…
+                </span>
+              ) : isSignIn ? (
+                "Sign In"
+              ) : (
+                "Create Account"
+              )}
+            </AppButton>
           </form>
 
-          <p className="text-sm text-muted-foreground">
-            {mode === "signin" ? "Need an account?" : "Already have an account?"} {" "}
-            <Link className="font-semibold text-foreground" href={mode === "signin" ? "/sign-up" : "/sign-in"}>
-              {mode === "signin" ? "Sign Up" : "Sign In"}
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-white/8" />
+            <span className="text-xs text-white/25">or continue with</span>
+            <div className="flex-1 h-px bg-white/8" />
+          </div>
+
+          {/* Switch */}
+          <p className="text-sm text-white/35 text-center">
+            {isSignIn ? "Don't have an account?" : "Already have an account?"}{" "}
+            <Link
+              href={isSignIn ? "/sign-up" : "/sign-in"}
+              className="text-white/70 font-semibold hover:text-white transition-colors"
+            >
+              {isSignIn ? "Sign Up" : "Sign In"}
             </Link>
           </p>
         </CardContent>
-      </Card>
+      </GlassCard>
     </motion.div>
   );
 }
