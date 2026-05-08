@@ -1,4 +1,4 @@
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { HttpError } from "@/lib/http/errors";
 import { verifyAccessToken } from "@/lib/auth/tokens";
 import { connectPrimaryDb } from "@/lib/db/mongoose";
@@ -7,8 +7,11 @@ import { RoleModel } from "@/lib/models/role";
 
 export async function requireAuth() {
   const headerList = await headers();
+  const cookieStore = await cookies();
   const authHeader = headerList.get("authorization");
-  const token = authHeader?.replace("Bearer ", "");
+  const bearerToken = authHeader?.replace("Bearer ", "");
+  const cookieToken = cookieStore.get("access_token")?.value;
+  const token = bearerToken ?? cookieToken;
 
   if (!token) throw new HttpError(401, "Missing access token");
   return verifyAccessToken(token);

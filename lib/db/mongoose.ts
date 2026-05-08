@@ -13,7 +13,7 @@ export async function connectPrimaryDb() {
 
   if (!cached.promise) {
     cached.promise = mongoose.connect(env.PRIMARY_DB_URI, {
-      dbName: "admin-platform",
+      dbName: "cypher-admin",
       maxPoolSize: 10,
     });
   }

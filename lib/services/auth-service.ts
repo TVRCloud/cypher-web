@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { Types } from "mongoose";
 import { DEFAULT_ROLE_KEY } from "@/lib/constants/auth";
 import { HttpError } from "@/lib/http/errors";
-import { clearRefreshCookie, setRefreshCookie } from "@/lib/auth/cookies";
+import { clearAccessCookie, clearRefreshCookie, setAccessCookie, setRefreshCookie } from "@/lib/auth/cookies";
 import { comparePassword, hashPassword } from "@/lib/auth/password";
 import {
   createAccessToken,
@@ -119,6 +119,7 @@ export async function refreshSession(rawRefreshToken: string, meta: ClientMeta) 
   });
 
   await setRefreshCookie(rotatedRefreshToken, expiresAt);
+  await setAccessCookie(createAccessToken(accessPayload));
 
   return {
     accessToken: createAccessToken(accessPayload),
@@ -144,10 +145,11 @@ export async function logoutAllUserSessions(userId: string) {
   await connectPrimaryDb();
 
   await SessionModel.updateMany({ userId: new Types.ObjectId(userId), revoked: false }, { $set: { revoked: true } });
-  await RefreshTokenModel.updateMany({ userId: new Types.ObjectId(userId), revoked: true }, { $set: { revoked: true } });
+  await RefreshTokenModel.updateMany({ userId: new Types.ObjectId(userId), revoked: false }, { $set: { revoked: true } });
   await UserModel.updateOne({ _id: userId }, { $inc: { tokenVersion: 1 } });
 
   await clearRefreshCookie();
+  await clearAccessCookie();
 }
 
 async function issueSession(userId: string, email: string, role: string, tokenVersion: number, meta: ClientMeta) {
@@ -172,6 +174,7 @@ async function issueSession(userId: string, email: string, role: string, tokenVe
   });
 
   await setRefreshCookie(refreshToken, expiresAt);
+  await setAccessCookie(createAccessToken(accessPayload));
 
   return {
     accessToken: createAccessToken(accessPayload),
