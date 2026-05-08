@@ -4,9 +4,14 @@ import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tabs as TabsPrimitive } from "radix-ui";
 import { cn } from "@/lib/utils";
-import { TabsContent } from "@/components/ui/tabs";
+import {
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/ui/tabs";
 
-export { TabsContent };
+// Keep standard shadcn exports available through _ui as compatibility layer.
+export { TabsList, TabsTrigger, TabsContent };
 export const Tabs = TabsPrimitive.Root;
 
 export function AnimatedTabsList({

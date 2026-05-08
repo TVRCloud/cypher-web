@@ -4,7 +4,7 @@ import { Bell, LogOut, Menu, Search, Settings, UserCircle2 } from "lucide-react"
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/_ui/input";
 import { menuList } from "@/lib/menu-list";
 import { useAuthStore } from "@/lib/stores/auth-store";
 

@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/_ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/_ui/card";
 import { TruncatedCell } from "@/components/ui/truncated-cell";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,

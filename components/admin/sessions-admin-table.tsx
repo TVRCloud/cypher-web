@@ -4,15 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, Ban } from "lucide-react";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/_ui/badge";
+import { Button } from "@/components/_ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/_ui/card";
 import { TruncatedCell } from "@/components/ui/truncated-cell";
 import {
   Table,

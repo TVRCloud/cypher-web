@@ -2,7 +2,7 @@
  * _ui/badge — themed badge variants on top of shadcn Badge.
  * Never modify components/ui/badge.tsx; extend here instead.
  */
-import { Badge, badgeVariants } from "@/components/ui/badge";
+import { Badge, badgeVariants } from "@/components/_ui/badge";
 import { cn } from "@/lib/utils";
 
 type StatusVariant = "active" | "pending" | "done" | "error" | "warning";

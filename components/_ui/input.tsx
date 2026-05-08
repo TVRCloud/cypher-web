@@ -2,7 +2,7 @@
  * _ui/input — themed input variants on top of shadcn Input.
  * Never modify components/ui/input.tsx; extend here instead.
  */
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/_ui/input";
 import { cn } from "@/lib/utils";
 
 /**

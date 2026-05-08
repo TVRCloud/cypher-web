@@ -14,8 +14,8 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+} from "@/components/_ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/_ui/tabs";
 import { BotStatusCard } from "@/components/dashboard/bot-status-card";
 import { MessageChart } from "@/components/dashboard/message-chart";
 import { CommandChart } from "@/components/dashboard/command-chart";

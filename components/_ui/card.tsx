@@ -9,7 +9,7 @@ import {
   CardTitle,
   CardDescription,
   CardFooter,
-} from "@/components/ui/card";
+} from "@/components/_ui/card";
 import { cn } from "@/lib/utils";
 
 /** Standard dashboard section card — consistent border + bg. */

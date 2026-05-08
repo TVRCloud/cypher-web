@@ -15,10 +15,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/_ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/_ui/card";
+import { Button } from "@/components/_ui/button";
 import { MoreHorizontal, Eye, Ban, MessageSquareOff } from "lucide-react";
 
 type MessageStatus = "delivered" | "pending" | "failed" | "blocked";

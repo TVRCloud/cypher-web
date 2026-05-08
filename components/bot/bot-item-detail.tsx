@@ -5,9 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, AlertCircle } from "lucide-react";
 import { fetchBotItem } from "@/lib/services/bot/base";
 import { type BotModuleKey } from "@/hooks/use-bot-module-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/_ui/card";
+import { Button } from "@/components/_ui/button";
+import { Badge } from "@/components/_ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
