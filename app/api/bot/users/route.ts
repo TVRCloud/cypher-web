@@ -10,14 +10,21 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const limit = Math.min(Number(url.searchParams.get("limit") ?? "20"), 100);
     const page = Math.max(Number(url.searchParams.get("page") ?? "0"), 0);
+    const search = url.searchParams.get("search") ?? null;
     const skip = page * limit;
+
+    const ALLOWED_SORTS = ["_id", "first_name", "username", "date"];
+    const sortBy = ALLOWED_SORTS.includes(url.searchParams.get("sort_by") ?? "") ? url.searchParams.get("sort_by")! : "_id";
+    const sortDir = url.searchParams.get("sort_dir") === "asc" ? 1 : -1;
+
+    const match = search ? { $or: [{ first_name: { $regex: search, $options: "i" } }, { last_name: { $regex: search, $options: "i" } }, { username: { $regex: search, $options: "i" } }] } : {};
 
     const UserModel = await getBotUserModel();
     const [result] = await UserModel.aggregate([
-      { $match: {} },
+      { $match: match },
       {
         $facet: {
-          data: [{ $sort: { _id: -1 } }, { $skip: skip }, { $limit: limit }],
+          data: [{ $sort: { [sortBy]: sortDir } }, { $skip: skip }, { $limit: limit }],
           meta: [{ $count: "total" }],
         },
       },

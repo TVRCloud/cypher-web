@@ -6,12 +6,14 @@ export default function BotGroupsPage() {
       title="Bot Groups"
       description="Collection: groups"
       module="groups"
+      searchable
+      searchPlaceholder="Search by group title…"
       columns={[
-        { key: "chat_id", label: "Chat ID" },
-        { key: "title", label: "Title" },
-        { key: "status", label: "Status" },
-        { key: "member_count", label: "Members" },
-        { key: "last_stats_check", label: "Last Check" },
+        { key: "chat_id",         label: "Chat ID",  sortable: true },
+        { key: "title",           label: "Title",    sortable: true },
+        { key: "status",          label: "Status" },
+        { key: "member_count",    label: "Members",  sortable: true },
+        { key: "last_stats_check",label: "Last Check" },
       ]}
     />
   );

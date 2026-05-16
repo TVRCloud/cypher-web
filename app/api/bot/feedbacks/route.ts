@@ -11,16 +11,25 @@ export async function GET(req: Request) {
     const limit = Math.min(Number(url.searchParams.get("limit") ?? "20"), 100);
     const page = Math.max(Number(url.searchParams.get("page") ?? "0"), 0);
     const status = url.searchParams.get("status") ?? null;
+    const type = url.searchParams.get("type") ?? null;
+    const search = url.searchParams.get("search") ?? null;
     const skip = page * limit;
 
+    const ALLOWED_SORTS = ["timestamp", "status", "type", "user_id"];
+    const sortBy = ALLOWED_SORTS.includes(url.searchParams.get("sort_by") ?? "") ? url.searchParams.get("sort_by")! : "timestamp";
+    const sortDir = url.searchParams.get("sort_dir") === "asc" ? 1 : -1;
+
     const FeedbackModel = await getBotFeedbackModel();
-    const match = status ? { status } : {};
+    const match: Record<string, unknown> = {};
+    if (status) match.status = { $regex: `^${status}$`, $options: "i" };
+    if (type)   match.type   = { $regex: `^${type}$`,   $options: "i" };
+    if (search) match.$or = [{ username: { $regex: search, $options: "i" } }, { feedback: { $regex: search, $options: "i" } }];
 
     const [result] = await FeedbackModel.aggregate([
       { $match: match },
       {
         $facet: {
-          data: [{ $sort: { timestamp: -1, _id: -1 } }, { $skip: skip }, { $limit: limit }],
+          data: [{ $sort: { [sortBy]: sortDir, _id: -1 } }, { $skip: skip }, { $limit: limit }],
           meta: [{ $count: "total" }],
         },
       },

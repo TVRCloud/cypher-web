@@ -1,12 +1,13 @@
 "use client";
 
-import { Bell, LogOut, Menu, Search, Settings, UserCircle2 } from "lucide-react";
+import { LogOut, Menu, Search, Settings, UserCircle2 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Input } from "@/components/_ui/input";
 import { menuList } from "@/lib/menu-list";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { NotificationBell } from "@/components/layout/notification-bell";
 
 interface DashboardTopbarProps {
   onMenuClick: () => void;
@@ -70,9 +71,7 @@ export function DashboardTopbar({ onMenuClick }: DashboardTopbarProps) {
           <Settings size={17} />
         </button>
 
-        <button className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Notifications">
-          <Bell size={17} />
-        </button>
+        <NotificationBell />
 
         <details className="relative">
           <summary className="list-none cursor-pointer text-muted-foreground hover:text-foreground transition-colors">

@@ -1,4 +1,5 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { PushProvider } from "@/components/providers/push-provider";
 
 export default function DashboardLayout({
   children,
@@ -6,8 +7,10 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen bg-background">
-      <DashboardShell>{children}</DashboardShell>
-    </div>
+    <PushProvider>
+      <div className="flex min-h-screen bg-background">
+        <DashboardShell>{children}</DashboardShell>
+      </div>
+    </PushProvider>
   );
 }

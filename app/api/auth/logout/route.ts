@@ -9,7 +9,7 @@ export async function POST() {
     await logoutAllUserSessions(user.id);
     return ok({ success: true });
   } catch (error) {
-    if (error instanceof HttpError) return fail(error.message, error.statusCode);
+    if (error instanceof HttpError) return fail(error.message, error.statusCode, error.details);
     return fail("Unable to logout", 400);
   }
 }
