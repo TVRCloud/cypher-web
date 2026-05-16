@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HelpCircle, X } from "lucide-react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { menuList } from "@/lib/menu-list";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -26,21 +26,11 @@ function NavItem({
       href={href}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-4 px-5 py-3.5 rounded-xl text-sm font-medium transition-all duration-200",
+        "flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
         active
-          ? "text-white shadow-lg shadow-blue-900/40"
-          : [
-              // inactive — light mode: dark navy text on white
-              "text-slate-500 hover:text-slate-900 hover:bg-slate-100",
-              // inactive — dark mode: muted blue-gray on navy
-              "dark:text-[#8f9bba] dark:hover:text-white dark:hover:bg-white/5",
-            ].join(" ")
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-muted-foreground hover:text-foreground hover:bg-muted dark:hover:bg-white/5"
       )}
-      style={
-        active
-          ? { background: "linear-gradient(97.89deg, #4776E6 0%, #8E54E9 100%)" }
-          : undefined
-      }
     >
       <Icon size={16} />
       {label}
@@ -73,15 +63,10 @@ export function DashboardSidebar({ open, onClose }: DashboardSidebarProps) {
     >
       {/* Logo + mobile close */}
       <div className="flex items-center gap-3 px-6 pt-8 pb-6">
-        <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-base shrink-0"
-          style={{ background: "linear-gradient(97.89deg, #4776E6 0%, #8E54E9 100%)" }}
-        >
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 bg-primary">
           ◈
         </div>
-        <span
-          className="font-bold text-sm tracking-widest uppercase flex-1 min-w-0 truncate text-slate-800 dark:text-white"
-        >
+        <span className="font-semibold text-sm flex-1 min-w-0 truncate text-foreground">
           Cypher Admin
         </span>
         <button
@@ -110,7 +95,7 @@ export function DashboardSidebar({ open, onClose }: DashboardSidebarProps) {
           return (
           <div key={group.groupLabel || "root"} className="space-y-1">
             {group.groupLabel ? (
-              <p className="px-5 pb-2 text-[10px] font-bold tracking-widest uppercase text-slate-400 dark:text-[#8f9bba]/60">
+              <p className="px-4 pb-1.5 text-[10px] font-semibold tracking-widest uppercase text-muted-foreground/50">
                 {group.groupLabel}
               </p>
             ) : null}
@@ -132,22 +117,7 @@ export function DashboardSidebar({ open, onClose }: DashboardSidebarProps) {
         )})}
       </nav>
 
-      {/* Help card — gradient stays constant in both modes */}
-      <div className="px-4 pb-6 shrink-0">
-        <div
-          className="rounded-2xl p-4"
-          style={{ background: "linear-gradient(127.09deg, #4776E6 0%, #8E54E9 100%)" }}
-        >
-          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center mb-3">
-            <HelpCircle size={15} className="text-white" />
-          </div>
-          <p className="text-white font-bold text-sm">Need help?</p>
-          <p className="text-white/70 text-xs mt-0.5 mb-3">Please check our docs</p>
-          <button className="w-full bg-white/20 hover:bg-white/30 text-white text-[11px] font-bold py-2 rounded-lg transition-colors uppercase tracking-widest border border-white/20">
-            Documentation
-          </button>
-        </div>
-      </div>
+      <div className="pb-4" />
     </aside>
   );
 }

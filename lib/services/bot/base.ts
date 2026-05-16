@@ -43,6 +43,6 @@ export async function fetchBotModule<T = Record<string, unknown>>(
   const ok = payload as PaginatedResponse<T>;
   return {
     ...ok,
-    totalPages: ok.totalPages ?? Math.ceil(ok.total / ok.limit),
+    totalPages: ok.totalPages ?? (ok.limit > 0 ? Math.ceil(ok.total / ok.limit) : 0),
   };
 }

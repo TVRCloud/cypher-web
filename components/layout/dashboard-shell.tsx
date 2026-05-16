@@ -6,8 +6,10 @@ import { DashboardTopbar } from "./topbar";
 import { PageGlow } from "./page-glow";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { RouteAccessGuard } from "@/components/auth/route-access-guard";
+import { useChangeStream } from "@/hooks/use-change-stream";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
+  useChangeStream();
   const [open, setOpen] = useState(false);
   const [bootstrapResolved, setBootstrapResolved] = useState(false);
   const hydrated = useAuthStore((state) => state.hydrated);
@@ -77,7 +79,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
       <div className="flex-1 ml-0 lg:ml-64 flex flex-col min-h-screen">
         <DashboardTopbar onMenuClick={toggle} />
-        <main className="flex-1 p-4 sm:p-6 overflow-auto">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 overflow-auto">
+          {authChecked ? children : (
+            <div className="flex items-center justify-center h-64">
+              <div className="h-6 w-6 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+            </div>
+          )}
+        </main>
       </div>
     </>
   );

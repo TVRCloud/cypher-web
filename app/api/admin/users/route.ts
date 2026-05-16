@@ -18,7 +18,7 @@ export async function GET() {
       .lean();
     return ok(users);
   } catch (error) {
-    if (error instanceof HttpError) return fail(error.message, error.statusCode);
+    if (error instanceof HttpError) return fail(error.message, error.statusCode, error.details);
     return fail("Unable to fetch users", 400);
   }
 }

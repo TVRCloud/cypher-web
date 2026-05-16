@@ -16,6 +16,6 @@ export async function requireRole(allowedRoles: string[]) {
 
 export async function requirePermission(permissionKey: string) {
   const user = await requireAuth();
-  if (!user.permissions.includes(permissionKey)) throw new HttpError(403, "Forbidden by permission");
+  if (!user.permissions?.includes(permissionKey)) throw new HttpError(403, "Forbidden by permission");
   return user;
 }

@@ -7,10 +7,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   try {
     await requirePermission("analytics.read");
     const { id } = await params;
+    const userId = Number(id);
+    if (isNaN(userId)) return fail("Invalid user ID", 400);
 
     const UserModel = await getBotUserModel();
     const [result] = await UserModel.aggregate([
-      { $match: { _id: Number(id) } },
+      { $match: { _id: userId } },
       { $limit: 1 },
     ]);
 

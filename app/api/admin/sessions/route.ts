@@ -15,7 +15,7 @@ export async function GET() {
       .lean();
     return ok(sessions);
   } catch (error) {
-    if (error instanceof HttpError) return fail(error.message, error.statusCode);
+    if (error instanceof HttpError) return fail(error.message, error.statusCode, error.details);
     return fail("Unable to fetch sessions", 400);
   }
 }

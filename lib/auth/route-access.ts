@@ -35,7 +35,8 @@ const routeRules: RouteRule[] = [
   { pattern: "/dashboard/logs", match: "prefix", permissions: ["analytics.read"] },
   { pattern: "/dashboard/analytics", match: "prefix", permissions: ["analytics.read"] },
   { pattern: "/dashboard/webhooks", match: "prefix", permissions: ["analytics.read"] },
-  { pattern: "/dashboard/settings", match: "prefix", permissions: ["analytics.read"] },
+  { pattern: "/dashboard/settings", match: "prefix" },
+  { pattern: "/dashboard/notifications", match: "prefix" },
 ];
 
 export const defaultAuthorizedPath = "/";

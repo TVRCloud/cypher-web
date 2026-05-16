@@ -16,7 +16,7 @@ export async function GET() {
     const permissions = await getPermissionKeysByRoleId(role._id.toString());
     return ok(permissions);
   } catch (error) {
-    if (error instanceof HttpError) return fail(error.message, error.statusCode);
+    if (error instanceof HttpError) return fail(error.message, error.statusCode, error.details);
     return fail("Unable to fetch permissions", 400);
   }
 }

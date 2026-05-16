@@ -10,17 +10,36 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const limit = Math.min(Number(url.searchParams.get("limit") ?? "20"), 100);
     const page = Math.max(Number(url.searchParams.get("page") ?? "0"), 0);
-    const search = url.searchParams.get("search") ?? null;
+    const search   = url.searchParams.get("search")   ?? null;
+    const quality  = url.searchParams.get("quality")  ?? null;
+    const language = url.searchParams.get("language") ?? null;
+    const year     = url.searchParams.get("year")     ?? null;
     const skip = page * limit;
 
+    const ALLOWED_SORTS = ["file_name", "file_size", "created_at", "year"];
+    const sortBy = ALLOWED_SORTS.includes(url.searchParams.get("sort_by") ?? "") ? url.searchParams.get("sort_by")! : "created_at";
+    const sortDir = (url.searchParams.get("sort_dir") === "asc" ? 1 : -1) as 1 | -1;
+
     const FileModel = await getBotFileModel();
-    const match = search ? { $text: { $search: search } } : {};
+    const match: Record<string, unknown> = search ? { $text: { $search: search } } : {};
+    if (quality)  match.quality  = { $regex: quality,  $options: "i" };
+    if (language) match.language = { $regex: language, $options: "i" };
+    if (year) {
+      const yearNum = Number(year);
+      match.$or = isNaN(yearNum)
+        ? [{ year }]
+        : [{ year }, { year: yearNum }];
+    }
+
+    const sortStage: Record<string, 1 | -1 | { $meta: "textScore" }> = search
+      ? { score: { $meta: "textScore" } }
+      : { [sortBy]: sortDir };
 
     const [result] = await FileModel.aggregate([
       { $match: match },
       {
         $facet: {
-          data: [{ $sort: { created_at: -1 } }, { $skip: skip }, { $limit: limit }],
+          data: [{ $sort: sortStage }, { $skip: skip }, { $limit: limit }],
           meta: [{ $count: "total" }],
         },
       },

@@ -73,7 +73,7 @@ export function BotItemDetail({ module }: { module: BotModuleKey }) {
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Failed to load</AlertTitle>
-              <AlertDescription>{String(error)}</AlertDescription>
+              <AlertDescription>{error instanceof Error ? error.message : String(error)}</AlertDescription>
             </Alert>
           ) : data ? (
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
