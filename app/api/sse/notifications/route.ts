@@ -2,15 +2,42 @@ import { requireAuth } from "@/lib/auth/guards";
 import { connectBotDb } from "@/lib/db/bot-mongoose";
 import { connectPrimaryDb } from "@/lib/db/mongoose";
 import { NotificationPrefModel } from "@/lib/models/notification-pref";
+import { PushSubscriptionModel } from "@/lib/models/push-subscription";
 import { HttpError } from "@/lib/http/errors";
+import { sendPush } from "@/lib/web-push";
 import mongoose from "mongoose";
 
 export const dynamic = "force-dynamic";
 
 const PREF_REFRESH_MS = 60_000;
 const ALL_TYPES = ["ADMIN_ACTION", "GROUP_ACTION", "BOT_ACTION", "USER_ACTION", "FEEDBACK"];
-
 const LOG_TYPES = new Set(["ADMIN_ACTION", "GROUP_ACTION", "BOT_ACTION", "USER_ACTION"]);
+
+const TYPE_LABELS: Record<string, string> = {
+  ADMIN_ACTION: "Admin Action",
+  GROUP_ACTION: "Group Action",
+  BOT_ACTION:   "Bot Action",
+  USER_ACTION:  "User Action",
+  FEEDBACK:     "New Feedback",
+};
+
+function buildPushBody(meta: string | null, userId: unknown): string {
+  if (!meta) return userId ? `User ${userId}` : "";
+  try {
+    const m = JSON.parse(meta) as Record<string, unknown>;
+    const str = (k: string) => (typeof m[k] === "string" && (m[k] as string).trim() ? m[k] as string : null);
+    const parts: string[] = [];
+    const actor = str("username") ? `@${str("username")}` : str("user") ?? (userId ? `User ${userId}` : null);
+    if (actor) parts.push(actor);
+    if (str("action")) parts.push(str("action")!);
+    if (str("ticket_id")) parts.push(`#${str("ticket_id")}`);
+    const msg = str("message") ?? str("text") ?? str("reason");
+    if (msg) parts.push(`"${msg.slice(0, 60)}${msg.length > 60 ? "…" : ""}"`);
+    return parts.join(" · ");
+  } catch {
+    return meta.slice(0, 100);
+  }
+}
 
 export async function GET(req: Request) {
   let user: Awaited<ReturnType<typeof requireAuth>>;
@@ -31,6 +58,9 @@ export async function GET(req: Request) {
       let prefRefreshTimer: ReturnType<typeof setInterval> | null = null;
       let closed = false;
 
+      // Push subscription for this user (refreshed with prefs)
+      let pushSub: { endpoint: string; keys: { p256dh: string; auth: string } } | null = null;
+
       const cleanup = () => {
         closed = true;
         if (prefRefreshTimer) clearInterval(prefRefreshTimer);
@@ -47,23 +77,32 @@ export async function GET(req: Request) {
         try { controller.enqueue(enc.encode(data)); } catch { /* closed */ }
       };
 
+      const loadPrefs = async (userObjectId: mongoose.Types.ObjectId) => {
+        const [prefDoc, pushDoc] = await Promise.all([
+          NotificationPrefModel.findOne({ userId: userObjectId }).lean() as Promise<{ subscribedTypes?: string[] } | null>,
+          PushSubscriptionModel.findOne({ userId: userObjectId }).lean() as Promise<{ enabled?: boolean; endpoint?: string; keys?: { p256dh: string; auth: string } } | null>,
+        ]);
+        return {
+          subscribedTypes: (prefDoc?.subscribedTypes?.length ? prefDoc.subscribedTypes : ALL_TYPES),
+          pushSub: (pushDoc?.enabled && pushDoc.endpoint && pushDoc.keys)
+            ? { endpoint: pushDoc.endpoint, keys: pushDoc.keys }
+            : null,
+        };
+      };
+
       try {
         await connectPrimaryDb();
         const userObjectId = new mongoose.Types.ObjectId(userId);
 
-        let prefDoc = await NotificationPrefModel.findOne({ userId: userObjectId }).lean() as
-          | { subscribedTypes?: string[] } | null;
-        let subscribedTypes: string[] = prefDoc?.subscribedTypes?.length
-          ? prefDoc.subscribedTypes
-          : ALL_TYPES;
+        const initial = await loadPrefs(userObjectId);
+        let subscribedTypes = initial.subscribedTypes;
+        pushSub = initial.pushSub;
 
         prefRefreshTimer = setInterval(async () => {
           try {
-            prefDoc = await NotificationPrefModel.findOne({ userId: userObjectId }).lean() as
-              | { subscribedTypes?: string[] } | null;
-            subscribedTypes = prefDoc?.subscribedTypes?.length
-              ? prefDoc.subscribedTypes
-              : ALL_TYPES;
+            const refreshed = await loadPrefs(userObjectId);
+            subscribedTypes = refreshed.subscribedTypes;
+            pushSub = refreshed.pushSub;
           } catch { /* non-fatal */ }
         }, PREF_REFRESH_MS);
 
@@ -71,7 +110,6 @@ export async function GET(req: Request) {
         const db = botConn.db;
         if (!db) throw new Error("Bot DB not ready");
 
-        // Watch both logs and feedbacks at the DB level
         changeStream = db.watch(
           [{ $match: { operationType: "insert", "ns.coll": { $in: ["logs", "feedbacks"] } } }],
           { fullDocument: "updateLookup" },
@@ -85,6 +123,8 @@ export async function GET(req: Request) {
             const doc = (change as { fullDocument?: Record<string, unknown> }).fullDocument;
             if (!doc) return;
 
+            let payload: Record<string, unknown> | null = null;
+
             if (coll === "logs") {
               const rawType = typeof doc.type === "string" ? doc.type : "";
               const logType = rawType.toUpperCase();
@@ -93,31 +133,52 @@ export async function GET(req: Request) {
               const meta = doc.meta != null
                 ? (typeof doc.meta === "object" ? JSON.stringify(doc.meta) : String(doc.meta))
                 : null;
-              enqueue(`data: ${JSON.stringify({
-                collection: "logs",
-                op: "insert",
-                logType,
+              payload = {
+                collection: "logs", op: "insert", logType,
                 id: String(doc._id ?? ""),
                 userId: doc.user_id ?? null,
                 date: doc.date ?? null,
                 time: doc.time ?? null,
                 meta: meta ? meta.slice(0, 120) : null,
-              })}\n\n`);
+              };
             } else if (coll === "feedbacks") {
               if (!subscribedTypes.map((t) => t.toUpperCase()).includes("FEEDBACK")) return;
               const desc = typeof doc.message === "string"
                 ? doc.message.slice(0, 120)
                 : (typeof doc.content === "string" ? doc.content.slice(0, 120) : null);
-              enqueue(`data: ${JSON.stringify({
-                collection: "feedbacks",
-                op: "insert",
-                logType: "FEEDBACK",
+              payload = {
+                collection: "feedbacks", op: "insert", logType: "FEEDBACK",
                 id: String(doc._id ?? ""),
                 userId: doc.user_id ?? null,
                 date: doc.date ?? null,
                 time: doc.time ?? null,
                 meta: desc,
-              })}\n\n`);
+              };
+            }
+
+            if (!payload) return;
+
+            enqueue(`data: ${JSON.stringify(payload)}\n\n`);
+
+            // Also push to the user's browser (works even if tab is backgrounded)
+            if (pushSub) {
+              const logType = String(payload.logType ?? "");
+              const dest = payload.collection === "feedbacks"
+                ? "/dashboard/feedbacks"
+                : `/dashboard/logs/${String(payload.id ?? "")}`;
+              void sendPush(pushSub, {
+                title: TYPE_LABELS[logType] ?? logType,
+                body: buildPushBody(payload.meta as string | null, payload.userId),
+                url: dest,
+                icon: "/icons/icon-192x192.png",
+                badge: "/icons/icon-72x72.png",
+              }).catch((err: unknown) => {
+                // 410 = subscription gone — remove it
+                if ((err as { statusCode?: number })?.statusCode === 410) {
+                  void PushSubscriptionModel.deleteOne({ userId: new mongoose.Types.ObjectId(userId) }).catch(() => null);
+                  pushSub = null;
+                }
+              });
             }
           } catch { /* non-fatal */ }
         });

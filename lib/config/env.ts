@@ -13,6 +13,9 @@ const envSchema = z.object({
   BOT_DB_URI: z.string().min(1).optional(),
   BOT_DB_NAME: z.string().min(1).optional(),
   BCRYPT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_EMAIL: z.string().email().optional(),
 });
 
 export const env = envSchema.parse(process.env);

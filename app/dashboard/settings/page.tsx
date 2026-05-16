@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Check, Save } from "lucide-react";
+import { Bell, BellOff, BellRing, Check, Save } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -12,6 +12,7 @@ import { Button } from "@/components/_ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { usePush } from "@/components/providers/push-provider";
 
 type Settings = {
   siteName: string;
@@ -340,6 +341,63 @@ export default function SiteSettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Push Notifications */}
+      <PushNotificationCard />
     </div>
+  );
+}
+
+function PushNotificationCard() {
+  const { state, subscribe, unsubscribe } = usePush();
+
+  const busy = state === "loading";
+
+  return (
+    <Card>
+      <CardHeader className="px-5 py-4 pb-0">
+        <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          Push Notifications
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="px-5 py-4">
+        {state === "unsupported" ? (
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <BellOff size={15} />
+            Push notifications are not supported in this browser.
+          </div>
+        ) : state === "denied" ? (
+          <div className="flex items-center gap-3 text-sm text-orange-500">
+            <BellOff size={15} />
+            Notifications are blocked. Enable them in your browser settings, then reload.
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-6">
+            <div className="flex items-start gap-3">
+              {state === "subscribed" ? (
+                <BellRing size={15} className="mt-0.5 shrink-0 text-primary" />
+              ) : (
+                <Bell size={15} className="mt-0.5 shrink-0 text-muted-foreground" />
+              )}
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {state === "subscribed" ? "Push notifications enabled" : "Enable push notifications"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {state === "subscribed"
+                    ? "You'll receive browser alerts for subscribed log types, even when the tab is in the background."
+                    : "Get browser alerts for new log events matching your subscribed types."}
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={state === "subscribed"}
+              disabled={busy}
+              onCheckedChange={(on) => { void (on ? subscribe() : unsubscribe()); }}
+            />
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

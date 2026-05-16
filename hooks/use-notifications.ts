@@ -48,6 +48,43 @@ type SseEvent = {
   meta?: string | null;
 };
 
+function buildToastDescription(
+  rawMeta: string | null | undefined,
+  userId: string | number | null | undefined,
+): string | undefined {
+  const parts: string[] = [];
+
+  if (rawMeta) {
+    try {
+      const m = JSON.parse(rawMeta) as Record<string, unknown>;
+      const str = (k: string) => (typeof m[k] === "string" && (m[k] as string).trim() ? m[k] as string : null);
+
+      // Actor: prefer @username over display name over user_id
+      const actor = str("username")
+        ? `@${str("username")}`
+        : str("user") ?? (userId ? `User ${userId}` : null);
+      if (actor) parts.push(actor);
+
+      // What happened
+      if (str("action")) parts.push(str("action")!);
+
+      // Reference numbers
+      if (str("ticket_id")) parts.push(`#${str("ticket_id")}`);
+      if (str("command")) parts.push(str("command")!);
+
+      // Message content — most meaningful, show truncated
+      const msg = str("message") ?? str("text") ?? str("reason");
+      if (msg) parts.push(`"${msg.slice(0, 60)}${msg.length > 60 ? "…" : ""}"`);
+    } catch {
+      // meta wasn't JSON — skip it
+    }
+  } else if (userId) {
+    parts.push(`User ${userId}`);
+  }
+
+  return parts.length ? parts.join(" · ") : undefined;
+}
+
 export function useNotifications() {
   const qc = useQueryClient();
   const router = useRouter();
@@ -79,29 +116,11 @@ export function useNotifications() {
 
           const label = TYPE_LABELS[d.logType] ?? d.logType;
 
-          // Navigate to detail page if we have an ID, else fall back to list
           const dest = d.id
             ? `/dashboard/logs/${d.id}`
-            : d.collection === "feedbacks"
-              ? "/dashboard/feedbacks"
-              : "/dashboard/notifications";
+            : "/dashboard/notifications";
 
-          const parts: string[] = [];
-          if (d.userId) parts.push(`User ${d.userId}`);
-          if (d.date || d.time) parts.push([d.date, d.time].filter(Boolean).join(" "));
-          if (d.meta) {
-            try {
-              const parsed = JSON.parse(d.meta) as Record<string, unknown>;
-              const readable = Object.entries(parsed)
-                .filter(([, v]) => v !== null && v !== undefined && v !== "")
-                .map(([k, v]) => `${k.replace(/_/g, " ")}: ${String(v)}`)
-                .join(" • ");
-              if (readable) parts.push(readable);
-            } catch {
-              if (d.meta.trim()) parts.push(d.meta);
-            }
-          }
-          const description = parts.join("  ·  ") || undefined;
+          const description = buildToastDescription(d.meta, d.userId);
 
           const toastAction = {
             label: "View",
