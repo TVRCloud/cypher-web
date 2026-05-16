@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryProvider } from "@/providers/query-provider";
 import { Toaster } from "sonner";
+import { PushProvider } from "@/components/providers/push-provider";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -39,8 +40,10 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <QueryProvider>
           <ThemeProvider>
-            <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
-            <Toaster richColors position="top-right" />
+            <PushProvider>
+              <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+              <Toaster richColors position="top-right" />
+            </PushProvider>
           </ThemeProvider>
         </QueryProvider>
       </body>
