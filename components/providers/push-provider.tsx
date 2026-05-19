@@ -34,19 +34,10 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export function PushProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<PushState>("loading");
   const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const [state, setState] = useState<PushState>("loading");
 
-  // Register service worker and check initial state
   useEffect(() => {
-<<<<<<< Updated upstream
-    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !vapidKey) {
-      setState("unsupported");
-      return;
-    }
-
-=======
->>>>>>> Stashed changes
     void (async () => {
       if (!("serviceWorker" in navigator) || !("PushManager" in window) || !vapidKey) {
         setState("unsupported");
@@ -60,11 +51,7 @@ export function PushProvider({ children }: { children: React.ReactNode }) {
         if (permission === "denied") { setState("denied"); return; }
 
         const existing = await reg.pushManager.getSubscription();
-        if (existing) {
-          setState("subscribed");
-        } else {
-          setState("unsubscribed");
-        }
+        setState(existing ? "subscribed" : "unsubscribed");
       } catch {
         setState("unsupported");
       }

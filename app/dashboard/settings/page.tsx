@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, BellOff, BellRing, Check, Save } from "lucide-react";
+import { Bell, BellOff, BellRing, Check, CheckCircle2, Download, MonitorSmartphone, Save } from "lucide-react";
+import { usePWAInstall } from "@/hooks/use-pwa-install";
 import {
   Card,
   CardContent,
@@ -344,6 +345,9 @@ export default function SiteSettingsPage() {
 
       {/* Push Notifications */}
       <PushNotificationCard />
+
+      {/* App Installation */}
+      <AppInstallCard />
     </div>
   );
 }
@@ -395,6 +399,54 @@ function PushNotificationCard() {
               disabled={busy}
               onCheckedChange={(on) => { void (on ? subscribe() : unsubscribe()); }}
             />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function AppInstallCard() {
+  const { installState, install } = usePWAInstall();
+
+  return (
+    <Card>
+      <CardHeader className="px-5 py-4 pb-0">
+        <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          App Installation
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="px-5 py-4">
+        {installState === "installed" ? (
+          <div className="flex items-center gap-3 text-sm text-green-600 dark:text-green-400">
+            <CheckCircle2 size={15} className="shrink-0" />
+            Cypher is installed as an app on this device.
+          </div>
+        ) : installState === "available" || installState === "installing" ? (
+          <div className="flex items-start justify-between gap-6">
+            <div className="flex items-start gap-3">
+              <MonitorSmartphone size={15} className="mt-0.5 shrink-0 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Install as app</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Add Cypher to your home screen or taskbar for a faster, standalone experience.
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              className="gap-1.5 shrink-0"
+              disabled={installState === "installing"}
+              onClick={() => void install()}
+            >
+              <Download size={13} />
+              {installState === "installing" ? "Installing…" : "Install"}
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <MonitorSmartphone size={15} className="shrink-0" />
+            Open Cypher over HTTPS in a supported browser (Chrome, Edge) to enable installation.
           </div>
         )}
       </CardContent>
