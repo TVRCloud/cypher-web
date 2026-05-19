@@ -21,6 +21,7 @@ import { MessageChart } from "@/components/dashboard/message-chart";
 import { CommandChart } from "@/components/dashboard/command-chart";
 import { RecentMessagesTable } from "@/components/dashboard/recent-messages-table";
 import { useBotStatsQuery } from "@/hooks/use-bot-stats-query";
+import { useTopFilesQuery } from "@/hooks/use-top-files-query";
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US").format(value);
@@ -28,6 +29,8 @@ function formatNumber(value: number) {
 
 export function DashboardPageContent() {
   const { data: botStats } = useBotStatsQuery();
+  const { data: topFiles = [] } = useTopFilesQuery();
+
   const stats = useMemo(
     () => [
       {
@@ -65,6 +68,9 @@ export function DashboardPageContent() {
     ],
     [botStats],
   );
+
+  const hb = botStats?.botHeartbeat ?? null;
+  const maxTopCount = topFiles[0]?.count ?? 1;
 
   return (
     <div className="space-y-6">
@@ -104,8 +110,8 @@ export function DashboardPageContent() {
       <Tabs defaultValue="overview">
         <TabsList className="h-8">
           <TabsTrigger value="overview" className="text-xs px-3">Overview</TabsTrigger>
-          <TabsTrigger value="messages" className="text-xs px-3">Messages</TabsTrigger>
-          <TabsTrigger value="commands" className="text-xs px-3">Commands</TabsTrigger>
+          <TabsTrigger value="messages" className="text-xs px-3">Downloads</TabsTrigger>
+          <TabsTrigger value="commands" className="text-xs px-3">Top Files</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4 space-y-4">
@@ -113,10 +119,10 @@ export function DashboardPageContent() {
             <div className="lg:col-span-1">
               <BotStatusCard
                 botName="@CypherBot"
-                online={true}
-                uptime={99.7}
-                responseRate={97.2}
-                lastSeen="just now"
+                online={hb?.online ?? false}
+                lastSeen={hb?.lastSeen ?? null}
+                uptimeSeconds={hb?.uptimeSeconds ?? null}
+                version={hb?.version ?? null}
                 totalHandled={botStats?.totalFiles ?? 0}
               />
             </div>
@@ -135,33 +141,35 @@ export function DashboardPageContent() {
 
         <TabsContent value="commands" className="mt-4 space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <CommandChart />
+            <CommandChart data={topFiles} />
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold">Command Stats</CardTitle>
+                <CardTitle className="text-sm font-semibold">Download Stats</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {[
-                  { cmd: "/start", pct: 100, count: "1,240" },
-                  { cmd: "/help", pct: 72, count: "890" },
-                  { cmd: "/status", pct: 52, count: "640" },
-                  { cmd: "/info", pct: 41, count: "510" },
-                  { cmd: "/stop", pct: 31, count: "380" },
-                  { cmd: "/sub", pct: 23, count: "290" },
-                ].map((row) => (
-                  <div key={row.cmd} className="flex items-center gap-3 text-xs">
-                    <code className="w-20 shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">
-                      {row.cmd}
-                    </code>
-                    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-primary/70"
-                        style={{ width: `${row.pct}%` }}
-                      />
+                {topFiles.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No download data yet</p>
+                ) : (
+                  topFiles.map((f) => (
+                    <div key={f.file_name} className="flex items-center gap-3 text-xs">
+                      <p
+                        className="w-36 shrink-0 truncate rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]"
+                        title={f.file_name}
+                      >
+                        {f.file_name}
+                      </p>
+                      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-primary/70"
+                          style={{ width: `${Math.round((f.count / maxTopCount) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="w-12 text-right text-muted-foreground">
+                        {formatNumber(f.count)}
+                      </span>
                     </div>
-                    <span className="w-12 text-right text-muted-foreground">{row.count}</span>
-                  </div>
-                ))}
+                  ))
+                )}
               </CardContent>
             </Card>
           </div>

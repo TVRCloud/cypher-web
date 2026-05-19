@@ -1,3 +1,10 @@
+export type BotHeartbeat = {
+  lastSeen: string | null;
+  uptimeSeconds: number | null;
+  version: string | null;
+  online: boolean;
+};
+
 export type BotStatsResponse = {
   totalFiles: number;
   totalUsers: number;
@@ -7,6 +14,7 @@ export type BotStatsResponse = {
   pendingFeedbacks: number;
   totalLogs: number;
   botActionLogs: number;
+  botHeartbeat: BotHeartbeat | null;
 };
 
 export async function getBotStats(): Promise<BotStatsResponse> {
