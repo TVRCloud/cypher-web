@@ -25,7 +25,7 @@ export function InstallBanner() {
 
   async function handleInstall() {
     await install();
-    setVisible(false);
+    dismiss();
   }
 
   return (
