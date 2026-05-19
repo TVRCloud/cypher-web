@@ -39,12 +39,19 @@ export function PushProvider({ children }: { children: React.ReactNode }) {
 
   // Register service worker and check initial state
   useEffect(() => {
+<<<<<<< Updated upstream
     if (!("serviceWorker" in navigator) || !("PushManager" in window) || !vapidKey) {
       setState("unsupported");
       return;
     }
 
+=======
+>>>>>>> Stashed changes
     void (async () => {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window) || !vapidKey) {
+        setState("unsupported");
+        return;
+      }
       try {
         const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
         await navigator.serviceWorker.ready;
