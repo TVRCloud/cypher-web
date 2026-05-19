@@ -3,6 +3,8 @@
   "short_name": "Cypher",
   "description": "Real-time monitoring and analytics for your Telegram bot",
   "start_url": "/",
+  "scope": "/",
+  "id": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0f172a",
