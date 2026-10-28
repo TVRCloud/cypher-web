@@ -1,8 +1,24 @@
+import { z } from "zod";
 import { ok, fail } from "@/lib/http/response";
 import { HttpError } from "@/lib/http/errors";
-import { requireAuth } from "@/lib/auth/guards";
+import { requirePermission } from "@/lib/auth/guards";
 import { connectPrimaryDb } from "@/lib/db/mongoose";
 import { SiteSettingsModel } from "@/lib/models/site-settings";
+
+const settingsUpdateSchema = z
+  .strictObject({
+    siteName: z.string().trim().min(1).max(100),
+    siteDescription: z.string().trim().max(500),
+    siteUrl: z.union([z.literal(""), z.url().max(300)]),
+    maintenanceMode: z.boolean(),
+    // Not enforced anywhere yet: no 2FA implementation exists.
+    twoFactorRequired: z.boolean(),
+    auditLogging: z.boolean(),
+    emailNotifications: z.boolean(),
+    sessionAlerts: z.boolean(),
+    defaultTheme: z.enum(["light", "dark", "system"]),
+  })
+  .partial();
 
 async function getSettings() {
   await connectPrimaryDb();
@@ -26,7 +42,7 @@ async function getSettings() {
 
 export async function GET() {
   try {
-    await requireAuth();
+    await requirePermission("settings.read");
     const settings = await getSettings();
     return ok(settings);
   } catch (error) {
@@ -37,20 +53,19 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   try {
-    await requireAuth();
-    await connectPrimaryDb();
+    await requirePermission("settings.write");
 
-    const body = (await req.json()) as Record<string, unknown>;
-
-    const allowed = [
-      "siteName", "siteDescription", "siteUrl",
-      "maintenanceMode", "twoFactorRequired", "auditLogging",
-      "emailNotifications", "sessionAlerts", "defaultTheme",
-    ];
-    const update: Record<string, unknown> = {};
-    for (const key of allowed) {
-      if (key in body) update[key] = body[key];
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return fail("Invalid JSON body", 400);
     }
+    const parsed = settingsUpdateSchema.safeParse(body);
+    if (!parsed.success) return fail("Invalid settings", 400, parsed.error.issues);
+    const update = parsed.data;
+
+    await connectPrimaryDb();
 
     const doc = await SiteSettingsModel.findOneAndUpdate(
       {},

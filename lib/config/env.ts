@@ -16,6 +16,10 @@ const envSchema = z.object({
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_EMAIL: z.string().email().optional(),
+  ALLOW_PUBLIC_SIGNUP: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
 });
 
 export const env = envSchema.parse(process.env);

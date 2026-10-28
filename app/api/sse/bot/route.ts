@@ -1,4 +1,4 @@
-import { requireAuth } from "@/lib/auth/guards";
+import { requirePermission } from "@/lib/auth/guards";
 import { connectBotDb } from "@/lib/db/bot-mongoose";
 import { HttpError } from "@/lib/http/errors";
 
@@ -8,9 +8,9 @@ const WATCHED_COLLECTIONS = new Set(["logs", "files", "users", "groups", "feedba
 
 export async function GET(req: Request) {
   try {
-    await requireAuth();
+    await requirePermission("analytics.read");
   } catch (err) {
-    if (err instanceof HttpError) return new Response("Unauthorized", { status: 401 });
+    if (err instanceof HttpError) return new Response(err.message, { status: err.statusCode });
     return new Response("Internal Server Error", { status: 500 });
   }
 
