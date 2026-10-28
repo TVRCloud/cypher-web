@@ -13,6 +13,8 @@ export const PERMISSIONS = [
   "analytics.read",
   "roles.read",
   "roles.update",
+  "settings.read",
+  "settings.write",
 ] as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[number];

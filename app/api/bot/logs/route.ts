@@ -1,4 +1,5 @@
 import { fail, ok } from "@/lib/http/response";
+import { cleanTextParam, containsRegex, exactRegex, parsePagination } from "@/lib/http/query";
 import { HttpError } from "@/lib/http/errors";
 import { requirePermission } from "@/lib/auth/guards";
 import { getBotLogModel } from "@/lib/bot/models/log";
@@ -8,12 +9,10 @@ export async function GET(req: Request) {
     await requirePermission("analytics.read");
 
     const url = new URL(req.url);
-    const limit = Math.min(Number(url.searchParams.get("limit") ?? "20"), 100);
-    const page = Math.max(Number(url.searchParams.get("page") ?? "0"), 0);
+    const { page, limit, skip } = parsePagination(url.searchParams, { defaultLimit: 20, maxLimit: 100 });
     const typeParam = url.searchParams.get("type") ?? null;
-    const types = typeParam ? typeParam.split(",").map((t) => t.trim()).filter(Boolean) : null;
-    const search = url.searchParams.get("search") ?? null;
-    const skip = page * limit;
+    const types = typeParam ? typeParam.split(",").map((t) => t.trim()).filter(Boolean).slice(0, 20) : null;
+    const search = cleanTextParam(url.searchParams.get("search"));
 
     const ALLOWED_SORTS = ["timestamp", "type", "user_id"];
     const sortBy = ALLOWED_SORTS.includes(url.searchParams.get("sort_by") ?? "") ? url.searchParams.get("sort_by")! : "timestamp";
@@ -21,14 +20,14 @@ export async function GET(req: Request) {
 
     const LogModel = await getBotLogModel();
     const match: Record<string, unknown> = types
-      ? { $or: types.map((t) => ({ type: { $regex: `^${t}$`, $options: "i" } })) }
+      ? { $or: types.map((t) => ({ type: exactRegex(t, 50) })) }
       : {};
     if (search) {
       const asNum = Number(search);
       if (!isNaN(asNum) && search.trim() !== "") {
         match.user_id = asNum;
       } else {
-        match.type = { $regex: search, $options: "i" };
+        match.type = containsRegex(search);
       }
     }
 

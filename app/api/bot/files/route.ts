@@ -2,38 +2,49 @@ import { fail, ok } from "@/lib/http/response";
 import { HttpError } from "@/lib/http/errors";
 import { requirePermission } from "@/lib/auth/guards";
 import { getBotFileModel } from "@/lib/bot/models/file";
+import { cleanTextParam, containsRegex, escapeRegex, parsePagination } from "@/lib/http/query";
+
+// The bot lowercases/normalizes titles and indexes normalized_title (and [normalized_title, created_at]).
+function normalizeTitle(input: string) {
+  return input.toLowerCase().replace(/\s+/g, " ").trim();
+}
 
 export async function GET(req: Request) {
   try {
     await requirePermission("analytics.read");
 
     const url = new URL(req.url);
-    const limit = Math.min(Number(url.searchParams.get("limit") ?? "20"), 100);
-    const page = Math.max(Number(url.searchParams.get("page") ?? "0"), 0);
-    const search   = url.searchParams.get("search")   ?? null;
-    const quality  = url.searchParams.get("quality")  ?? null;
-    const language = url.searchParams.get("language") ?? null;
-    const year     = url.searchParams.get("year")     ?? null;
-    const skip = page * limit;
+    const { page, limit, skip } = parsePagination(url.searchParams);
+    const search   = cleanTextParam(url.searchParams.get("search"));
+    const quality  = cleanTextParam(url.searchParams.get("quality"), 50);
+    const language = cleanTextParam(url.searchParams.get("language"), 50);
+    const year     = cleanTextParam(url.searchParams.get("year"), 10);
 
     const ALLOWED_SORTS = ["file_name", "file_size", "created_at", "year"];
     const sortBy = ALLOWED_SORTS.includes(url.searchParams.get("sort_by") ?? "") ? url.searchParams.get("sort_by")! : "created_at";
     const sortDir = (url.searchParams.get("sort_dir") === "asc" ? 1 : -1) as 1 | -1;
 
     const FileModel = await getBotFileModel();
-    const match: Record<string, unknown> = search ? { $text: { $search: search } } : {};
-    if (quality)  match.quality  = { $regex: quality,  $options: "i" };
-    if (language) match.language = { $regex: language, $options: "i" };
+    const filters: Record<string, unknown>[] = [];
+
+    if (search) {
+      // Indexed prefix match on normalized_title first; fall back to an escaped
+      // case-insensitive substring match on file_name when the prefix finds nothing.
+      const normalized = normalizeTitle(search);
+      const prefix = normalized ? { normalized_title: { $regex: `^${escapeRegex(normalized)}` } } : null;
+      const hasPrefixHit = prefix ? !!(await FileModel.exists(prefix)) : false;
+      filters.push(hasPrefixHit && prefix ? prefix : { file_name: containsRegex(search) });
+    }
+    if (quality)  filters.push({ quality:  containsRegex(quality, 50) });
+    if (language) filters.push({ language: containsRegex(language, 50) });
     if (year) {
       const yearNum = Number(year);
-      match.$or = isNaN(yearNum)
-        ? [{ year }]
-        : [{ year }, { year: yearNum }];
+      filters.push({ $or: Number.isNaN(yearNum) ? [{ year }] : [{ year }, { year: yearNum }] });
     }
+    const match = filters.length ? { $and: filters } : {};
 
-    const sortStage: Record<string, 1 | -1 | { $meta: "textScore" }> = search
-      ? { score: { $meta: "textScore" } }
-      : { [sortBy]: sortDir };
+    // When searching, order by recency (matches the [normalized_title, created_at] index).
+    const sortStage: Record<string, 1 | -1> = search ? { created_at: -1 } : { [sortBy]: sortDir };
 
     const [result] = await FileModel.aggregate([
       { $match: match },
