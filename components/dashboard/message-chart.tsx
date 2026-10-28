@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/_ui/card";
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,

@@ -1,5 +1,5 @@
 /**
- * _ui/form-field — labelled input wrapper with inline error display.
+ * form-field — labelled input wrapper with inline error display.
  * Two variants: FormField (adapts to theme) and GlassFormField (dark surface).
  */
 import { Label } from "@/components/ui/label";

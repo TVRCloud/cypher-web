@@ -14,8 +14,9 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "@/components/_ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/_ui/tabs";
+} from "@/components/ui/card";
+import { Tabs as TabsPrimitive } from "radix-ui";
+import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BotStatusCard } from "@/components/dashboard/bot-status-card";
 import { MessageChart } from "@/components/dashboard/message-chart";
 import { CommandChart } from "@/components/dashboard/command-chart";
@@ -107,7 +108,7 @@ export function DashboardPageContent() {
         })}
       </div>
 
-      <Tabs defaultValue="overview">
+      <TabsPrimitive.Root defaultValue="overview">
         <TabsList className="h-8">
           <TabsTrigger value="overview" className="text-xs px-3">Overview</TabsTrigger>
           <TabsTrigger value="messages" className="text-xs px-3">Downloads</TabsTrigger>
@@ -174,7 +175,7 @@ export function DashboardPageContent() {
             </Card>
           </div>
         </TabsContent>
-      </Tabs>
+      </TabsPrimitive.Root>
     </div>
   );
 }

@@ -4,15 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, Ban } from "lucide-react";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/_ui/badge";
-import { Button } from "@/components/_ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/_ui/card";
+} from "@/components/ui/card";
 import { TruncatedCell } from "@/components/ui/truncated-cell";
 import {
   Table,
@@ -21,7 +21,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/_ui/table";
+} from "@/components/ui/table";
 
 type SessionUser = { _id: string; email?: string };
 type SessionRow = {
