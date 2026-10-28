@@ -11,10 +11,11 @@ import { Loader2, AlertCircle } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { getSession } from "next-auth/react";
 
-import { GlassCard, CardContent } from "@/components/_ui/card";
-import { GlassInput } from "@/components/_ui/input";
-import { GlassFormField } from "@/components/_ui/form-field";
-import { AppButton } from "@/components/_ui/button";
+import { CardContent } from "@/components/ui/card";
+import { GlassCard } from "@/components/ui/glass-card";
+import { GlassInput } from "@/components/ui/glass-input";
+import { GlassFormField } from "@/components/ui/form-field";
+import { AppButton } from "@/components/ui/app-button";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 const formSchema = z.object({

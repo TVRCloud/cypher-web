@@ -6,8 +6,8 @@ import {
   AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, ChevronRight, ChevronDown, RefreshCw, Search, SlidersHorizontal, X,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Card, CardContent, CardHeader } from "@/components/_ui/card";
-import { Button } from "@/components/_ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TruncatedCell } from "@/components/ui/truncated-cell";
@@ -15,7 +15,7 @@ import { DataPagination } from "@/components/ui/data-pagination";
 import { useBotModuleQuery, type BotModuleKey } from "@/hooks/use-bot-module-query";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/_ui/table";
+} from "@/components/ui/table";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";

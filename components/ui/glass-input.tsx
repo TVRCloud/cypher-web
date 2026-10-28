@@ -1,14 +1,10 @@
 /**
- * _ui/input — themed input variants on top of shadcn Input.
- * Never modify components/ui/input.tsx; extend here instead.
+ * Glass input — for auth / dark-surface forms.
+ * White text, translucent background, blue focus ring.
  */
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-/**
- * Glass input — for auth / dark-surface forms.
- * White text, translucent background, blue focus ring.
- */
 export function GlassInput({
   className,
   ...props
@@ -26,5 +22,3 @@ export function GlassInput({
     />
   );
 }
-
-export { Input };

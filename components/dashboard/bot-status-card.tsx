@@ -5,8 +5,8 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "@/components/_ui/card";
-import { Badge } from "@/components/_ui/badge";
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { BotMessageSquare, Wifi, WifiOff, Clock, Timer, Tag } from "lucide-react";
 
