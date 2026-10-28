@@ -48,8 +48,15 @@ function matches(pathname: string, rule: RouteRule) {
   return pathname === rule.pattern || pathname.startsWith(`${rule.pattern}/`);
 }
 
+// Most specific rule wins: the longest matching pattern, so a broad `/dashboard` prefix
+// can never shadow stricter rules such as `/dashboard/users`.
 function findRule(pathname: string) {
-  return routeRules.find((rule) => matches(pathname, rule));
+  let best: RouteRule | undefined;
+  for (const rule of routeRules) {
+    if (!matches(pathname, rule)) continue;
+    if (!best || rule.pattern.length > best.pattern.length) best = rule;
+  }
+  return best;
 }
 
 export function canAccessPath(pathname: string, role?: string | null, permissions: string[] = []) {
