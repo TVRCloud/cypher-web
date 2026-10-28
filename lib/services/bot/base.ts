@@ -11,19 +11,28 @@ function toQueryString(params: PaginatedParams) {
   return search.toString();
 }
 
+/** fetch + json + consistent error. Throws `payload.message` or `fallbackMessage` on non-2xx. */
+export async function apiFetch<T>(
+  url: string,
+  init: RequestInit = { method: "GET" },
+  fallbackMessage = "Request failed",
+): Promise<T> {
+  const res = await fetch(url, init);
+  const payload = (await res.json()) as T | { message?: string };
+
+  if (!res.ok) {
+    throw new Error((payload as { message?: string } | null)?.message ?? fallbackMessage);
+  }
+
+  return payload as T;
+}
+
 export async function fetchBotItem<T = Record<string, unknown>>(
   endpoint: string,
   id: string,
 ): Promise<T> {
   const url = `${endpoint}/${encodeURIComponent(id)}`;
-  const res = await fetch(url, { method: "GET" });
-  const payload = (await res.json()) as T | { message?: string };
-
-  if (!res.ok) {
-    throw new Error((payload as { message?: string }).message ?? "Item not found");
-  }
-
-  return payload as T;
+  return apiFetch<T>(url, { method: "GET" }, "Item not found");
 }
 
 export async function fetchBotModule<T = Record<string, unknown>>(
@@ -33,14 +42,7 @@ export async function fetchBotModule<T = Record<string, unknown>>(
   const query = toQueryString(params);
   const url = query ? `${endpoint}?${query}` : endpoint;
 
-  const res = await fetch(url, { method: "GET" });
-  const payload = (await res.json()) as PaginatedResponse<T> | { message?: string };
-
-  if (!res.ok) {
-    throw new Error((payload as { message?: string }).message ?? "Failed to fetch data");
-  }
-
-  const ok = payload as PaginatedResponse<T>;
+  const ok = await apiFetch<PaginatedResponse<T>>(url, { method: "GET" }, "Failed to fetch data");
   return {
     ...ok,
     totalPages: ok.totalPages ?? (ok.limit > 0 ? Math.ceil(ok.total / ok.limit) : 0),

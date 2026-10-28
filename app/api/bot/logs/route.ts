@@ -1,4 +1,5 @@
 import { fail, ok } from "@/lib/http/response";
+import { paginate } from "@/lib/bot/paginate";
 import { HttpError } from "@/lib/http/errors";
 import { requirePermission } from "@/lib/auth/guards";
 import { getBotLogModel } from "@/lib/bot/models/log";
@@ -32,18 +33,7 @@ export async function GET(req: Request) {
       }
     }
 
-    const [result] = await LogModel.aggregate([
-      { $match: match },
-      {
-        $facet: {
-          data: [{ $sort: { [sortBy]: sortDir, _id: -1 } }, { $skip: skip }, { $limit: limit }],
-          meta: [{ $count: "total" }],
-        },
-      },
-    ]);
-
-    const data = result?.data ?? [];
-    const total: number = result?.meta[0]?.total ?? 0;
+    const { data, total } = await paginate(LogModel, match, { [sortBy]: sortDir, _id: -1 }, skip, limit);
 
     return ok({ data, total, totalPages: Math.ceil(total / limit), page, limit });
   } catch (error) {

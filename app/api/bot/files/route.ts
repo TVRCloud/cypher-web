@@ -1,4 +1,5 @@
 import { fail, ok } from "@/lib/http/response";
+import { paginate } from "@/lib/bot/paginate";
 import { HttpError } from "@/lib/http/errors";
 import { requirePermission } from "@/lib/auth/guards";
 import { getBotFileModel } from "@/lib/bot/models/file";
@@ -35,18 +36,7 @@ export async function GET(req: Request) {
       ? { score: { $meta: "textScore" } }
       : { [sortBy]: sortDir };
 
-    const [result] = await FileModel.aggregate([
-      { $match: match },
-      {
-        $facet: {
-          data: [{ $sort: sortStage }, { $skip: skip }, { $limit: limit }],
-          meta: [{ $count: "total" }],
-        },
-      },
-    ]);
-
-    const data = result?.data ?? [];
-    const total: number = result?.meta[0]?.total ?? 0;
+    const { data, total } = await paginate(FileModel, match, sortStage, skip, limit);
 
     return ok({ data, total, totalPages: Math.ceil(total / limit), page, limit });
   } catch (error) {
