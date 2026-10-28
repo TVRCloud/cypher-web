@@ -16,6 +16,7 @@ const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
 const SIGNIN_WINDOW_MS = 15 * 60 * 1000;
 const SIGNIN_PER_ACCOUNT_LIMIT = 5;
 const SIGNIN_PER_IP_LIMIT = 30;
+const SIGNIN_PER_EMAIL_LIMIT = 20;
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -42,8 +43,12 @@ export const authOptions: NextAuthOptions = {
         const accountKey = `signin:${ipKey}:${parsed.data.email}`;
         const ipLimitKey = `signin-ip:${ipKey}`;
         const ipHit = rateLimit(ipLimitKey, SIGNIN_PER_IP_LIMIT, SIGNIN_WINDOW_MS);
+        // Don't record account hits once the IP is blocked (keeps the key map from being flooded).
+        if (!ipHit.allowed) throw new Error("Too many attempts. Try again later.");
         const accountHit = rateLimit(accountKey, SIGNIN_PER_ACCOUNT_LIMIT, SIGNIN_WINDOW_MS);
-        if (!ipHit.allowed || !accountHit.allowed) {
+        // Per-email cap independent of IP so rotating IPs can't reset it (higher, to limit lockout abuse).
+        const emailHit = rateLimit(`signin-email:${parsed.data.email}`, SIGNIN_PER_EMAIL_LIMIT, SIGNIN_WINDOW_MS);
+        if (!accountHit.allowed || !emailHit.allowed) {
           throw new Error("Too many attempts. Try again later.");
         }
 
@@ -55,6 +60,7 @@ export const authOptions: NextAuthOptions = {
         const valid = await comparePassword(parsed.data.password, user.passwordHash);
         if (!valid) return null;
         resetRateLimit(accountKey);
+        resetRateLimit(`signin-email:${parsed.data.email}`);
 
         // Make sure newly added permissions exist and are linked to roles (idempotent, once per process).
         await ensureRbacSeededOnce();

@@ -16,6 +16,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_EMAIL: z.string().email().optional(),
+  TRUSTED_PROXY_COUNT: z.coerce.number().int().min(0).max(10).default(1),
   ALLOW_PUBLIC_SIGNUP: z
     .enum(["true", "false"])
     .default("false")
