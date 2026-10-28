@@ -8,7 +8,7 @@ import { UserModel } from "@/lib/models/user";
 import { RoleModel } from "@/lib/models/role";
 import { SessionModel } from "@/lib/models/session";
 import { ensureRbacSeededOnce, getPermissionKeysByRoleId } from "@/lib/services/rbac-service";
-import { getIpFromHeaders, isRateLimited, rateLimit, resetRateLimit } from "@/lib/auth/rate-limit";
+import { getIpFromHeaders, rateLimit, resetRateLimit } from "@/lib/auth/rate-limit";
 
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
 
@@ -47,28 +47,22 @@ export const authOptions: NextAuthOptions = {
         if (!rateLimit(ipLimitKey, SIGNIN_PER_IP_LIMIT, SIGNIN_WINDOW_MS).allowed) {
           throw new Error("Too many attempts. Try again later.");
         }
-        // Per-account and per-email buckets only count FAILED attempts (recorded below), so
-        // an attacker who never gets the password right cannot fill them with junk keys for free,
-        // and a correct password from a clean IP+email pair is never blocked by IP-only noise.
-        if (
-          isRateLimited(accountKey, SIGNIN_PER_ACCOUNT_LIMIT, SIGNIN_WINDOW_MS) ||
-          isRateLimited(emailKey, SIGNIN_PER_EMAIL_LIMIT, SIGNIN_WINDOW_MS)
-        ) {
+        // Reserve a hit for the account and email buckets BEFORE any await, so concurrent requests
+        // can't all pass a check-then-record gap. A successful sign-in refunds both (reset below).
+        // rateLimit() also denies when its namespace can't take a new key, so this fails closed.
+        const accountHit = rateLimit(accountKey, SIGNIN_PER_ACCOUNT_LIMIT, SIGNIN_WINDOW_MS);
+        const emailHit = rateLimit(emailKey, SIGNIN_PER_EMAIL_LIMIT, SIGNIN_WINDOW_MS);
+        if (!accountHit.allowed || !emailHit.allowed) {
           throw new Error("Too many attempts. Try again later.");
         }
-        const recordFailure = () => {
-          rateLimit(accountKey, SIGNIN_PER_ACCOUNT_LIMIT, SIGNIN_WINDOW_MS);
-          rateLimit(emailKey, SIGNIN_PER_EMAIL_LIMIT, SIGNIN_WINDOW_MS);
-          return null;
-        };
 
         await connectPrimaryDb();
 
         const user = await UserModel.findOne({ email: parsed.data.email });
-        if (!user) return recordFailure();
+        if (!user) return null;
 
         const valid = await comparePassword(parsed.data.password, user.passwordHash);
-        if (!valid) return recordFailure();
+        if (!valid) return null;
         resetRateLimit(accountKey);
         resetRateLimit(emailKey);
 

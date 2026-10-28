@@ -37,11 +37,17 @@ function makeRoom(ns: string, map: Map<string, Bucket>, now: number, windowMs: n
   for (const [k, hits] of map) {
     if (!live(hits, now, windowMs).length) map.delete(k);
   }
-  // Still full: evict oldest buckets that are NOT currently blocking anyone. Blocked buckets
-  // are kept, so flooding with unique keys can't reset an active block.
-  for (const [k, hits] of map) {
-    if (map.size < MAX_KEYS_PER_NAMESPACE) break;
-    if (live(hits, now, windowMs).length < limit) map.delete(k);
+  // Still full: evict the buckets with the FEWEST live hits (never blocking ones), so an
+  // attacker flooding single-hit junk keys can't push out a bucket that is close to its limit.
+  if (map.size >= MAX_KEYS_PER_NAMESPACE) {
+    const candidates: [string, number][] = [];
+    for (const [k, hits] of map) {
+      const n = live(hits, now, windowMs).length;
+      if (n < limit) candidates.push([k, n]);
+    }
+    candidates.sort((x, y) => x[1] - y[1]);
+    const toDrop = Math.min(candidates.length, Math.ceil(MAX_KEYS_PER_NAMESPACE * 0.1));
+    for (let i = 0; i < toDrop; i++) map.delete(candidates[i][0]);
   }
 }
 
