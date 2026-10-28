@@ -20,19 +20,26 @@ describe("canAccessPath", () => {
     expect(canAccessPath("/botany", "ADMIN", [])).toBe(true);
   });
 
-  // KNOWN BUG: the broad `/dashboard` prefix rule is listed first in route-access.ts and
-  // `find` returns the first match, so the stricter /dashboard/users and
-  // /dashboard/admin/sessions rules are never reached. Flip `it.fails` to `it` once fixed.
-  it.fails("requires both role and permission for users page", () => {
+  it("requires both role and permission for users page", () => {
     expect(canAccessPath("/dashboard/users", "ADMIN", ["users.read"])).toBe(true);
     expect(canAccessPath("/dashboard/users", "ADMIN", [])).toBe(false);
     expect(canAccessPath("/dashboard/users", "VIEWER", ["users.read"])).toBe(false);
     expect(canAccessPath("/dashboard/users", null, ["users.read"])).toBe(false);
   });
 
-  it.fails("gates admin sessions by role and sessions.read", () => {
+  it("gates admin sessions by role and sessions.read", () => {
     expect(canAccessPath("/dashboard/admin/sessions", "MODERATOR", ["sessions.read"])).toBe(true);
     expect(canAccessPath("/dashboard/admin/sessions", "MODERATOR", [])).toBe(false);
+  });
+
+  it("applies the most specific rule over the broad /dashboard prefix", () => {
+    expect(canAccessPath("/dashboard", "USER", [])).toBe(true);
+    expect(canAccessPath("/dashboard/queue", "ADMIN", [])).toBe(false);
+    expect(canAccessPath("/dashboard/queue", "ADMIN", ["bot.commands.read"])).toBe(true);
+    expect(canAccessPath("/dashboard/audit", "ADMIN", [])).toBe(false);
+    expect(canAccessPath("/dashboard/audit/anything", "ADMIN", ["audit.read"])).toBe(true);
+    expect(canAccessPath("/dashboard/logs/123", "ADMIN", [])).toBe(false);
+    expect(canAccessPath("/dashboard/settings", "USER", [])).toBe(true);
   });
 });
 
