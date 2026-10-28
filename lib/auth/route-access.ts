@@ -32,6 +32,8 @@ const routeRules: RouteRule[] = [
 
   // Analytics/system pages (read-focused)
   { pattern: "/dashboard/messages", match: "prefix", permissions: ["analytics.read"] },
+  { pattern: "/dashboard/queue", match: "prefix", permissions: ["bot.commands.read"] },
+  { pattern: "/dashboard/audit", match: "prefix", permissions: ["audit.read"] },
   { pattern: "/dashboard/logs", match: "prefix", permissions: ["analytics.read"] },
   { pattern: "/dashboard/analytics", match: "prefix", permissions: ["analytics.read"] },
   { pattern: "/dashboard/webhooks", match: "prefix", permissions: ["analytics.read"] },
