@@ -8,7 +8,7 @@ import { UserModel } from "@/lib/models/user";
 import { RoleModel } from "@/lib/models/role";
 import { SessionModel } from "@/lib/models/session";
 import { ensureRbacSeededOnce, getPermissionKeysByRoleId } from "@/lib/services/rbac-service";
-import { getIpFromHeaders, rateLimit, resetRateLimit } from "@/lib/auth/rate-limit";
+import { getIpFromHeaders, isRateLimited, rateLimit, resetRateLimit } from "@/lib/auth/rate-limit";
 
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
 
@@ -42,25 +42,35 @@ export const authOptions: NextAuthOptions = {
         const ipKey = getIpFromHeaders(headerValue);
         const accountKey = `signin:${ipKey}:${parsed.data.email}`;
         const ipLimitKey = `signin-ip:${ipKey}`;
-        const ipHit = rateLimit(ipLimitKey, SIGNIN_PER_IP_LIMIT, SIGNIN_WINDOW_MS);
-        // Don't record account hits once the IP is blocked (keeps the key map from being flooded).
-        if (!ipHit.allowed) throw new Error("Too many attempts. Try again later.");
-        const accountHit = rateLimit(accountKey, SIGNIN_PER_ACCOUNT_LIMIT, SIGNIN_WINDOW_MS);
-        // Per-email cap independent of IP so rotating IPs can't reset it (higher, to limit lockout abuse).
-        const emailHit = rateLimit(`signin-email:${parsed.data.email}`, SIGNIN_PER_EMAIL_LIMIT, SIGNIN_WINDOW_MS);
-        if (!accountHit.allowed || !emailHit.allowed) {
+        const emailKey = `signin-email:${parsed.data.email}`;
+        // Every attempt counts against the caller's IP.
+        if (!rateLimit(ipLimitKey, SIGNIN_PER_IP_LIMIT, SIGNIN_WINDOW_MS).allowed) {
           throw new Error("Too many attempts. Try again later.");
         }
+        // Per-account and per-email buckets only count FAILED attempts (recorded below), so
+        // an attacker who never gets the password right cannot fill them with junk keys for free,
+        // and a correct password from a clean IP+email pair is never blocked by IP-only noise.
+        if (
+          isRateLimited(accountKey, SIGNIN_PER_ACCOUNT_LIMIT, SIGNIN_WINDOW_MS) ||
+          isRateLimited(emailKey, SIGNIN_PER_EMAIL_LIMIT, SIGNIN_WINDOW_MS)
+        ) {
+          throw new Error("Too many attempts. Try again later.");
+        }
+        const recordFailure = () => {
+          rateLimit(accountKey, SIGNIN_PER_ACCOUNT_LIMIT, SIGNIN_WINDOW_MS);
+          rateLimit(emailKey, SIGNIN_PER_EMAIL_LIMIT, SIGNIN_WINDOW_MS);
+          return null;
+        };
 
         await connectPrimaryDb();
 
         const user = await UserModel.findOne({ email: parsed.data.email });
-        if (!user) return null;
+        if (!user) return recordFailure();
 
         const valid = await comparePassword(parsed.data.password, user.passwordHash);
-        if (!valid) return null;
+        if (!valid) return recordFailure();
         resetRateLimit(accountKey);
-        resetRateLimit(`signin-email:${parsed.data.email}`);
+        resetRateLimit(emailKey);
 
         // Make sure newly added permissions exist and are linked to roles (idempotent, once per process).
         await ensureRbacSeededOnce();

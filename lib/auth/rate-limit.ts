@@ -8,42 +8,73 @@ import { env } from "@/lib/config/env";
  */
 type Bucket = number[];
 
-const buckets = new Map<string, Bucket>();
-const MAX_KEYS = 10_000;
-let lastSweep = 0;
+/** Buckets are partitioned by key namespace (text before the first ":") so keys an attacker can
+ *  mint freely (e.g. emails) can never push out buckets in another namespace (e.g. IPs). */
+const namespaces = new Map<string, Map<string, Bucket>>();
+const MAX_KEYS_PER_NAMESPACE = 10_000;
+const lastSweep = new Map<string, number>();
 
-function sweep(now: number, windowMs: number) {
-  if (now - lastSweep < 60_000 && buckets.size < MAX_KEYS) return;
-  lastSweep = now;
-  for (const [key, hits] of buckets) {
-    if (!hits.length || now - hits[hits.length - 1] > windowMs) buckets.delete(key);
+function nsOf(key: string) {
+  const i = key.indexOf(":");
+  return i === -1 ? key : key.slice(0, i);
+}
+
+function bucketsFor(key: string) {
+  const ns = nsOf(key);
+  let map = namespaces.get(ns);
+  if (!map) {
+    map = new Map();
+    namespaces.set(ns, map);
+  }
+  return { ns, map };
+}
+
+const live = (hits: Bucket, now: number, windowMs: number) => hits.filter((t) => now - t < windowMs);
+
+function makeRoom(ns: string, map: Map<string, Bucket>, now: number, windowMs: number, limit: number) {
+  if (now - (lastSweep.get(ns) ?? 0) < 60_000 && map.size < MAX_KEYS_PER_NAMESPACE) return;
+  lastSweep.set(ns, now);
+  for (const [k, hits] of map) {
+    if (!live(hits, now, windowMs).length) map.delete(k);
+  }
+  // Still full: evict oldest buckets that are NOT currently blocking anyone. Blocked buckets
+  // are kept, so flooding with unique keys can't reset an active block.
+  for (const [k, hits] of map) {
+    if (map.size < MAX_KEYS_PER_NAMESPACE) break;
+    if (live(hits, now, windowMs).length < limit) map.delete(k);
   }
 }
 
 export type RateLimitResult = { allowed: boolean; remaining: number; retryAfterSec: number };
 
+/** Read-only check: is `key` already at its limit? Does not record a hit. */
+export function isRateLimited(key: string, limit: number, windowMs: number, now = Date.now()): boolean {
+  const hits = namespaces.get(nsOf(key))?.get(key);
+  return !!hits && live(hits, now, windowMs).length >= limit;
+}
+
 /** Records a hit for `key` and reports whether it is within `limit` per `windowMs`. */
 export function rateLimit(key: string, limit: number, windowMs: number, now = Date.now()): RateLimitResult {
-  sweep(now, windowMs);
-  // Fail closed when the map is full of live entries: never evict a bucket that may be
-  // blocking someone, otherwise flooding with unique keys would reset active blocks.
-  if (!buckets.has(key) && buckets.size >= MAX_KEYS) {
+  const { ns, map } = bucketsFor(key);
+  makeRoom(ns, map, now, windowMs, limit);
+  // Only possible when the namespace is full of buckets that are all actively blocking.
+  if (!map.has(key) && map.size >= MAX_KEYS_PER_NAMESPACE) {
     return { allowed: false, remaining: 0, retryAfterSec: Math.ceil(windowMs / 1000) };
   }
-  const hits = (buckets.get(key) ?? []).filter((t) => now - t < windowMs);
+  const hits = live(map.get(key) ?? [], now, windowMs);
 
   if (hits.length >= limit) {
-    buckets.set(key, hits);
+    map.set(key, hits);
     return { allowed: false, remaining: 0, retryAfterSec: Math.max(1, Math.ceil((hits[0] + windowMs - now) / 1000)) };
   }
 
   hits.push(now);
-  buckets.set(key, hits);
+  map.set(key, hits);
   return { allowed: true, remaining: limit - hits.length, retryAfterSec: 0 };
 }
 
 export function resetRateLimit(key: string) {
-  buckets.delete(key);
+  namespaces.get(nsOf(key))?.delete(key);
 }
 
 /**
