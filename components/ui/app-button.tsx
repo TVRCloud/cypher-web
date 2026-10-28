@@ -1,6 +1,5 @@
 /**
- * _ui/button — extends shadcn Button with a `gradient` prop.
- * Never modify components/ui/button.tsx; extend here instead.
+ * AppButton — shadcn Button with an optional brand `gradient` prop.
  */
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -30,5 +29,3 @@ export function AppButton({ gradient, className, ...props }: AppButtonProps) {
     />
   );
 }
-
-export { Button, buttonVariants };

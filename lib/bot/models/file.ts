@@ -5,7 +5,8 @@ const botFileSchema = new Schema(
   {
     _id: { type: String, required: true },
     file_link: { type: String, required: true },
-    file_name: { type: String, required: true, index: "text" },
+    file_name: { type: String, required: true },
+    normalized_title: { type: String, default: null },
     file_size: { type: Number, required: true },
     file_type: { type: String, default: null },
     created_at: { type: Date, default: null },

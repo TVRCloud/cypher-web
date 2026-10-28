@@ -16,6 +16,8 @@ export const PERMISSIONS = [
   "bot.commands.read",
   "bot.commands.write",
   "audit.read",
+  "settings.read",
+  "settings.write",
 ] as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[number];

@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { botKeys } from "@/lib/query-keys";
 import type { PaginatedParams, PaginatedResponse } from "@/lib/services/bot/types";
 import { getBotFiles } from "@/lib/services/bot/files.service";
 import { getBotUsers } from "@/lib/services/bot/users.service";
@@ -31,7 +32,7 @@ const serviceByModule: Record<BotModuleKey, (params: PaginatedParams) => Promise
 };
 
 export function useBotModuleQuery(module: BotModuleKey, params: PaginatedParams) {
-  const queryKey = useMemo(() => ["bot-module", module, params], [module, params]);
+  const queryKey = useMemo(() => botKeys.module(module, params), [module, params]);
 
   return useQuery({
     queryKey,

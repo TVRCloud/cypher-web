@@ -7,8 +7,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/_ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/_ui/card";
+} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download } from "lucide-react";
 import { useRecentDownloadsQuery } from "@/hooks/use-recent-downloads-query";
 

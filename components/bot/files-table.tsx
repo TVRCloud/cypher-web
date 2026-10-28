@@ -3,12 +3,12 @@
 import { usePaginatedFetch } from "@/lib/hooks/use-paginated-fetch";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/_ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/_ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataPagination } from "@/components/ui/data-pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TruncatedCell } from "@/components/ui/truncated-cell";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/_ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertCircle } from "lucide-react";
 
 type BotFile = {

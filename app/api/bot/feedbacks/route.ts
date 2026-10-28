@@ -1,4 +1,6 @@
 import { fail, ok } from "@/lib/http/response";
+import { cleanTextParam, containsRegex, exactRegex, parsePagination } from "@/lib/http/query";
+import { paginate } from "@/lib/bot/paginate";
 import { HttpError } from "@/lib/http/errors";
 import { requirePermission } from "@/lib/auth/guards";
 import { getBotFeedbackModel } from "@/lib/bot/models/feedback";
@@ -8,12 +10,10 @@ export async function GET(req: Request) {
     await requirePermission("analytics.read");
 
     const url = new URL(req.url);
-    const limit = Math.min(Number(url.searchParams.get("limit") ?? "20"), 100);
-    const page = Math.max(Number(url.searchParams.get("page") ?? "0"), 0);
-    const status = url.searchParams.get("status") ?? null;
-    const type = url.searchParams.get("type") ?? null;
-    const search = url.searchParams.get("search") ?? null;
-    const skip = page * limit;
+    const { page, limit, skip } = parsePagination(url.searchParams, { defaultLimit: 20, maxLimit: 100 });
+    const status = cleanTextParam(url.searchParams.get("status"));
+    const type = cleanTextParam(url.searchParams.get("type"));
+    const search = cleanTextParam(url.searchParams.get("search"));
 
     const ALLOWED_SORTS = ["timestamp", "status", "type", "user_id"];
     const sortBy = ALLOWED_SORTS.includes(url.searchParams.get("sort_by") ?? "") ? url.searchParams.get("sort_by")! : "timestamp";
@@ -21,22 +21,11 @@ export async function GET(req: Request) {
 
     const FeedbackModel = await getBotFeedbackModel();
     const match: Record<string, unknown> = {};
-    if (status) match.status = { $regex: `^${status}$`, $options: "i" };
-    if (type)   match.type   = { $regex: `^${type}$`,   $options: "i" };
-    if (search) match.$or = [{ username: { $regex: search, $options: "i" } }, { feedback: { $regex: search, $options: "i" } }];
+    if (status) match.status = exactRegex(status);
+    if (type)   match.type   = exactRegex(type);
+    if (search) match.$or = [{ username: containsRegex(search) }, { feedback: containsRegex(search) }];
 
-    const [result] = await FeedbackModel.aggregate([
-      { $match: match },
-      {
-        $facet: {
-          data: [{ $sort: { [sortBy]: sortDir, _id: -1 } }, { $skip: skip }, { $limit: limit }],
-          meta: [{ $count: "total" }],
-        },
-      },
-    ]);
-
-    const data = result?.data ?? [];
-    const total: number = result?.meta[0]?.total ?? 0;
+    const { data, total } = await paginate(FeedbackModel, match, { [sortBy]: sortDir, _id: -1 }, skip, limit);
 
     return ok({ data, total, totalPages: Math.ceil(total / limit), page, limit });
   } catch (error) {

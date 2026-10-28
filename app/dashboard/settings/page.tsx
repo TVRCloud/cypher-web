@@ -8,8 +8,8 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "@/components/_ui/card";
-import { Button } from "@/components/_ui/button";
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -91,7 +91,11 @@ export default function SiteSettingsPage() {
         ]);
         if (settingsRes.ok) {
           const data = (await settingsRes.json()) as Partial<Settings>;
-          setSettings((prev) => ({ ...prev, ...data }));
+          // Keep only known keys: the API rejects unknown fields (_id, timestamps, ...).
+          const known = Object.fromEntries(
+            Object.entries(data).filter(([key]) => key in DEFAULTS),
+          ) as Partial<Settings>;
+          setSettings((prev) => ({ ...prev, ...known }));
         }
         if (notifRes.ok) {
           const data = (await notifRes.json()) as { subscribedTypes: string[] };
@@ -253,8 +257,8 @@ export default function SiteSettingsPage() {
             />
           </SettingRow>
           <SettingRow
-            label="Require 2FA"
-            description="Enforce two-factor authentication for all accounts"
+            label="Require 2FA (not enforced yet)"
+            description="Stored only: two-factor authentication is not implemented, so this has no effect yet"
           >
             <Switch
               checked={settings.twoFactorRequired}

@@ -18,6 +18,9 @@ export async function connectBotDb() {
     const connection = mongoose.createConnection(env.BOT_DB_URI, {
       dbName: env.BOT_DB_NAME,
       maxPoolSize: 10,
+      // The bot (cypher-v2) owns the bot DB schema and indexes; never create them from web.
+      autoIndex: false,
+      autoCreate: false,
     });
     cached.promise = connection.asPromise();
   }
