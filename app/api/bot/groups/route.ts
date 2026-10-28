@@ -1,4 +1,5 @@
 import { fail, ok } from "@/lib/http/response";
+import { cleanTextParam, containsRegex, parsePagination } from "@/lib/http/query";
 import { paginate } from "@/lib/bot/paginate";
 import { HttpError } from "@/lib/http/errors";
 import { requirePermission } from "@/lib/auth/guards";
@@ -9,16 +10,14 @@ export async function GET(req: Request) {
     await requirePermission("analytics.read");
 
     const url = new URL(req.url);
-    const limit = Math.min(Number(url.searchParams.get("limit") ?? "20"), 100);
-    const page = Math.max(Number(url.searchParams.get("page") ?? "0"), 0);
-    const search = url.searchParams.get("search") ?? null;
-    const skip = page * limit;
+    const { page, limit, skip } = parsePagination(url.searchParams, { defaultLimit: 20, maxLimit: 100 });
+    const search = cleanTextParam(url.searchParams.get("search"));
 
     const ALLOWED_SORTS = ["_id", "title", "member_count", "added_at"];
     const sortBy = ALLOWED_SORTS.includes(url.searchParams.get("sort_by") ?? "") ? url.searchParams.get("sort_by")! : "added_at";
     const sortDir = url.searchParams.get("sort_dir") === "asc" ? 1 : -1;
 
-    const match = search ? { title: { $regex: search, $options: "i" } } : {};
+    const match = search ? { title: containsRegex(search) } : {};
 
     const GroupModel = await getBotGroupModel();
     const { data, total } = await paginate(GroupModel, match, { [sortBy]: sortDir, _id: -1 }, skip, limit);

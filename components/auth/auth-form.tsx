@@ -61,7 +61,11 @@ export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
         password: values.password,
       });
 
-      if (result?.error) throw new Error("Invalid email or password");
+      if (result?.error) {
+        throw new Error(
+          result.error.startsWith("Too many") ? result.error : "Invalid email or password",
+        );
+      }
 
       // Sync permissions into Zustand store
       const session = await getSession();

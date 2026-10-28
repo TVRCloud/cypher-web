@@ -1,4 +1,5 @@
 import { fail, ok } from "@/lib/http/response";
+import { parsePagination } from "@/lib/http/query";
 import { paginate } from "@/lib/bot/paginate";
 import { HttpError } from "@/lib/http/errors";
 import { requirePermission } from "@/lib/auth/guards";
@@ -9,9 +10,7 @@ export async function GET(req: Request) {
     await requirePermission("analytics.read");
 
     const url = new URL(req.url);
-    const limit = Math.min(Number(url.searchParams.get("limit") ?? "50"), 200);
-    const page = Math.max(Number(url.searchParams.get("page") ?? "0"), 0);
-    const skip = page * limit;
+    const { page, limit, skip } = parsePagination(url.searchParams, { defaultLimit: 50, maxLimit: 200 });
 
     const ConfigModel = await getBotConfigModel();
     const { data, total } = await paginate(ConfigModel, {}, { _id: 1 }, skip, limit);
