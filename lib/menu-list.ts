@@ -10,6 +10,8 @@ import {
   Cog,
   SlidersHorizontal,
   Bell,
+  ListChecks,
+  ClipboardList,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -47,6 +49,8 @@ export const menuList: MenuGroup[] = [
     groupLabel: "System",
     menus: [
       { href: "/dashboard/logs", label: "Logs", icon: ScrollText, permission: "analytics.read" },
+      { href: "/dashboard/queue", label: "Command Queue", icon: ListChecks, permission: "bot.commands.read" },
+      { href: "/dashboard/audit", label: "Audit Log", icon: ClipboardList, permission: "audit.read" },
     ],
   },
   {

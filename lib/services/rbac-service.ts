@@ -6,7 +6,7 @@ import { RoleModel } from "@/lib/models/role";
 
 const rolePermissionSeed: Record<RoleKey, string[]> = {
   SUPER_ADMIN: [...PERMISSIONS],
-  ADMIN: ["users.read", "users.create", "users.update", "sessions.read", "sessions.revoke", "analytics.read", "roles.read"],
+  ADMIN: ["users.read", "users.create", "users.update", "sessions.read", "sessions.revoke", "analytics.read", "roles.read", "bot.commands.read", "bot.commands.write", "audit.read"],
   MODERATOR: ["users.read", "users.update", "sessions.read"],
   OPERATOR: ["users.read", "sessions.read"],
   USER: [],

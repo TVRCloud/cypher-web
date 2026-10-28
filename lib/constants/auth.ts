@@ -13,6 +13,9 @@ export const PERMISSIONS = [
   "analytics.read",
   "roles.read",
   "roles.update",
+  "bot.commands.read",
+  "bot.commands.write",
+  "audit.read",
 ] as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[number];
