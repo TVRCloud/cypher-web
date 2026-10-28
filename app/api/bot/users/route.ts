@@ -1,5 +1,6 @@
 import { fail, ok } from "@/lib/http/response";
 import { cleanTextParam, containsRegex, parsePagination } from "@/lib/http/query";
+import { paginate } from "@/lib/bot/paginate";
 import { HttpError } from "@/lib/http/errors";
 import { requirePermission } from "@/lib/auth/guards";
 import { getBotUserModel } from "@/lib/bot/models/user";
@@ -19,18 +20,7 @@ export async function GET(req: Request) {
     const match = search ? { $or: [{ first_name: containsRegex(search) }, { last_name: containsRegex(search) }, { username: containsRegex(search) }] } : {};
 
     const UserModel = await getBotUserModel();
-    const [result] = await UserModel.aggregate([
-      { $match: match },
-      {
-        $facet: {
-          data: [{ $sort: { [sortBy]: sortDir } }, { $skip: skip }, { $limit: limit }],
-          meta: [{ $count: "total" }],
-        },
-      },
-    ]);
-
-    const data = result?.data ?? [];
-    const total: number = result?.meta[0]?.total ?? 0;
+    const { data, total } = await paginate(UserModel, match, { [sortBy]: sortDir }, skip, limit);
 
     return ok({ data, total, totalPages: Math.ceil(total / limit), page, limit });
   } catch (error) {

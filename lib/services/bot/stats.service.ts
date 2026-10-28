@@ -1,3 +1,5 @@
+import { apiFetch } from "@/lib/services/bot/base";
+
 export type BotHeartbeat = {
   lastSeen: string | null;
   uptimeSeconds: number | null;
@@ -17,13 +19,6 @@ export type BotStatsResponse = {
   botHeartbeat: BotHeartbeat | null;
 };
 
-export async function getBotStats(): Promise<BotStatsResponse> {
-  const res = await fetch("/api/bot/stats", { method: "GET" });
-  const payload = (await res.json()) as BotStatsResponse | { message?: string };
-
-  if (!res.ok) {
-    throw new Error((payload as { message?: string }).message ?? "Failed to fetch bot stats");
-  }
-
-  return payload as BotStatsResponse;
+export function getBotStats(): Promise<BotStatsResponse> {
+  return apiFetch<BotStatsResponse>("/api/bot/stats", { method: "GET" }, "Failed to fetch bot stats");
 }

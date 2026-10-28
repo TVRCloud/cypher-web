@@ -8,38 +8,65 @@ import { getBotFeedbackModel } from "@/lib/bot/models/feedback";
 import { getBotLogModel } from "@/lib/bot/models/log";
 import { getBotConfigModel } from "@/lib/bot/models/config";
 
-export async function GET() {
-  try {
-    await requirePermission("analytics.read");
+const COUNTS_TTL_MS = 30_000;
 
-    const [FileModel, UserModel, GroupModel, FeedbackModel, LogModel, ConfigModel] = await Promise.all([
+type Counts = {
+  totalFiles: number;
+  totalUsers: number;
+  totalGroups: number;
+  approvedGroups: number;
+  pausedGroups: number;
+  pendingFeedbacks: number;
+  totalLogs: number;
+  botActionLogs: number;
+};
+
+// Per-instance cache for counts only. Heartbeat is always read fresh.
+let countsCache: { at: number; value: Counts } | null = null;
+let countsInflight: Promise<Counts> | null = null;
+
+async function loadCounts(): Promise<Counts> {
+  if (countsCache && Date.now() - countsCache.at < COUNTS_TTL_MS) return countsCache.value;
+  if (countsInflight) return countsInflight;
+
+  countsInflight = (async () => {
+    const [FileModel, UserModel, GroupModel, FeedbackModel, LogModel] = await Promise.all([
       getBotFileModel(),
       getBotUserModel(),
       getBotGroupModel(),
       getBotFeedbackModel(),
       getBotLogModel(),
-      getBotConfigModel(),
     ]);
 
-    const [
-      totalFiles,
-      totalUsers,
-      totalGroups,
-      approvedGroups,
-      pausedGroups,
-      pendingFeedbacks,
-      totalLogs,
-      botActionLogs,
-      heartbeatDoc,
-    ] = await Promise.all([
-      FileModel.countDocuments({}),
-      UserModel.countDocuments({}),
-      GroupModel.countDocuments({}),
-      GroupModel.countDocuments({ status: "approved" }),
-      GroupModel.countDocuments({ status: "paused" }),
-      FeedbackModel.countDocuments({ status: "Pending" }),
-      LogModel.countDocuments({}),
-      LogModel.countDocuments({ type: "BOT_ACTION" }),
+    const [totalFiles, totalUsers, totalGroups, approvedGroups, pausedGroups, pendingFeedbacks, totalLogs, botActionLogs] =
+      await Promise.all([
+        FileModel.estimatedDocumentCount(),
+        UserModel.estimatedDocumentCount(),
+        GroupModel.countDocuments({}),
+        GroupModel.countDocuments({ status: "approved" }),
+        GroupModel.countDocuments({ status: "paused" }),
+        FeedbackModel.countDocuments({ status: "Pending" }),
+        LogModel.estimatedDocumentCount(),
+        LogModel.countDocuments({ type: "BOT_ACTION" }),
+      ]);
+
+    const value = { totalFiles, totalUsers, totalGroups, approvedGroups, pausedGroups, pendingFeedbacks, totalLogs, botActionLogs };
+    countsCache = { at: Date.now(), value };
+    return value;
+  })().finally(() => {
+    countsInflight = null;
+  });
+
+  return countsInflight;
+}
+
+export async function GET() {
+  try {
+    await requirePermission("analytics.read");
+
+    const ConfigModel = await getBotConfigModel();
+    const [counts, heartbeatDoc] = await Promise.all([
+      loadCounts(),
       ConfigModel.findOne({ _id: "bot_heartbeat" }).lean(),
     ]);
 
@@ -47,14 +74,7 @@ export async function GET() {
     const lastSeen = hb?.last_seen ?? null;
 
     return ok({
-      totalFiles,
-      totalUsers,
-      totalGroups,
-      approvedGroups,
-      pausedGroups,
-      pendingFeedbacks,
-      totalLogs,
-      botActionLogs,
+      ...counts,
       botHeartbeat: {
         lastSeen,
         uptimeSeconds: hb?.uptime_seconds ?? null,

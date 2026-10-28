@@ -1,3 +1,5 @@
+import { apiFetch } from "@/lib/services/bot/base";
+
 export type DownloadChartPoint = { date: string; count: number };
 
 export type RecentDownload = {
@@ -11,23 +13,14 @@ export type RecentDownload = {
 
 export type TopFile = { file_name: string; count: number };
 
-export async function getDownloadsChart(days: number): Promise<DownloadChartPoint[]> {
-  const res = await fetch(`/api/bot/downloads/chart?days=${days}`);
-  const payload = await res.json();
-  if (!res.ok) throw new Error((payload as { message?: string })?.message ?? "Failed to fetch download chart");
-  return payload as DownloadChartPoint[];
+export function getDownloadsChart(days: number): Promise<DownloadChartPoint[]> {
+  return apiFetch<DownloadChartPoint[]>(`/api/bot/downloads/chart?days=${days}`, undefined, "Failed to fetch download chart");
 }
 
-export async function getRecentDownloads(): Promise<RecentDownload[]> {
-  const res = await fetch("/api/bot/downloads/recent");
-  const payload = await res.json();
-  if (!res.ok) throw new Error((payload as { message?: string })?.message ?? "Failed to fetch recent downloads");
-  return payload as RecentDownload[];
+export function getRecentDownloads(): Promise<RecentDownload[]> {
+  return apiFetch<RecentDownload[]>("/api/bot/downloads/recent", undefined, "Failed to fetch recent downloads");
 }
 
-export async function getTopFiles(): Promise<TopFile[]> {
-  const res = await fetch("/api/bot/downloads/top-files");
-  const payload = await res.json();
-  if (!res.ok) throw new Error((payload as { message?: string })?.message ?? "Failed to fetch top files");
-  return payload as TopFile[];
+export function getTopFiles(): Promise<TopFile[]> {
+  return apiFetch<TopFile[]>("/api/bot/downloads/top-files", undefined, "Failed to fetch top files");
 }
